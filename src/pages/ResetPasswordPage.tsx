@@ -4,6 +4,7 @@ import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
 import { AuthError, resetPassword } from "../lib/auth";
 import { validateNewPassword, type NewPasswordErrors } from "../lib/validation";
+import PasswordRules from "../components/PasswordRules";
 
 export default function ResetPasswordPage() {
   const [params] = useSearchParams();
@@ -77,7 +78,7 @@ export default function ResetPasswordPage() {
           onChange={setPassword}
           error={errors.password}
         />
-        <p className="hint">Use at least 8 characters with a letter and a number.</p>
+        <PasswordRules password={password}/>
         <PasswordField
           ref={confirmRef}
           id="confirm-password"

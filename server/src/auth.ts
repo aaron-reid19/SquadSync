@@ -35,7 +35,7 @@ export function requireCsrf(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
-function startSession(res: Response, userId: number) {
+export function startSession(res: Response, userId: number) {
   // A brand-new token on every login prevents session fixation.
   const token = crypto.randomBytes(32).toString("base64url");
   db.prepare("DELETE FROM sessions WHERE expires_at < ?").run(Date.now());

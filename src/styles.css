@@ -32,12 +32,14 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); background: 
 .field { margin-bottom: 16px; }
 .field label { display: block; font-weight: 700; margin-bottom: 6px; }
 .field__control { position: relative; }
-.field input {
+.field input, .field textarea, .field select {
   width: 100%; min-height: 48px; padding: 10px 14px; font: inherit; color: var(--ink);
   background: #fff; border: 2px solid var(--ink); border-radius: 12px;
 }
 .field__control input { padding-right: 56px; }
-.field input[aria-invalid="true"] { border-color: var(--red-text); background: #fff5f4; }
+.field input[aria-invalid="true"], .field textarea[aria-invalid="true"], .field select[aria-invalid="true"] {
+  border-color: var(--red-text); background: #fff5f4;
+}
 .field__toggle {
   position: absolute; right: 6px; top: 6px; bottom: 6px; width: 44px;
   display: grid; place-items: center; padding: 0; color: var(--ink);
@@ -74,3 +76,59 @@ body { margin: 0; font-family: var(--font-body); color: var(--ink); background: 
 
 @media (prefers-reduced-motion: reduce) { .btn { transition: none; } }
 @media (max-width: 380px) { .login__card { padding: 22px 18px; } }
+
+/* Sign-up */
+.login__card--wide { width: min(100%, 560px); }
+.group { border: 0; padding: 0; margin: 0 0 8px; min-width: 0; }
+.group legend, .chips legend { font-family: var(--font-display); font-size: 1.1rem; padding: 0; margin-bottom: 12px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .row2 { grid-template-columns: 1fr; } }
+.optional { font-weight: 400; color: var(--muted); }
+.field__hint { margin: 6px 0 0; font-size: .85rem; color: var(--muted); }
+.field textarea { resize: vertical; }
+
+.chips { border: 0; padding: 0; margin: 0 0 16px; min-width: 0; }
+.chips legend { font-family: var(--font-body); font-weight: 700; font-size: 1rem; }
+.chips__list { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  min-height: 40px; padding: 6px 14px; font: 500 .95rem var(--font-body); color: var(--ink);
+  background: #fff; border: 2px solid var(--ink); border-radius: 999px; cursor: pointer;
+}
+.chip[aria-pressed="true"] { background: var(--green); font-weight: 700; }
+.chip:disabled { opacity: .45; cursor: not-allowed; }
+
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 8px 0; }
+.check input { width: 22px; height: 22px; margin: 2px 0 0; accent-color: var(--ink); flex: none; }
+
+.steps { margin-bottom: 20px; }
+.steps__bars { display: flex; gap: 6px; }
+.steps__bar { flex: 1; height: 8px; border-radius: 8px; background: #e5e5e5; }
+.steps__bar--on { background: var(--blue); }
+.steps__label { margin: 8px 0 0; font-size: .9rem; color: var(--muted); }
+
+/* Live validation + consent */
+.rules { list-style: none; margin: -8px 0 16px; padding: 0; font-size: .9rem; color: var(--muted); display: grid; gap: 2px; }
+.rules__ok { color: #2f6b0f; font-weight: 700; }
+
+.consent { margin: 8px 0 4px; padding: 14px; border: 2px dashed var(--ink); border-radius: 14px; }
+.consent:focus { outline: 3px solid var(--blue); }
+.consent__lead { margin: 0 0 10px; font-weight: 700; }
+.consent__docs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+.btn--small { width: auto; min-height: 40px; padding: 8px 16px; font-size: .95rem; }
+
+dialog.policy {
+  width: min(92vw, 640px); max-height: 86dvh; padding: 0; color: var(--ink);
+  border: 2px solid var(--ink); border-radius: 16px; box-shadow: 6px 6px 0 var(--ink);
+}
+dialog.policy[open] { display: flex; flex-direction: column; }
+dialog.policy::backdrop { background: rgba(27, 36, 48, .55); }
+.policy__title { font-family: var(--font-display); font-size: 1.4rem; margin: 0; padding: 18px 20px 12px; }
+.policy__body { overflow: auto; padding: 0 20px 16px; flex: 1; line-height: 1.55; }
+.policy__body--page { overflow: visible; padding: 0; }
+.policy__body h3 { font-size: 1.05rem; margin: 20px 0 6px; }
+.policy__body p, .policy__body li { line-height: 1.55; }
+.policy__body ul { padding-left: 20px; margin: 6px 0; }
+.policy__foot {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 12px 20px; border-top: 2px solid var(--ink); font-size: .95rem;
+}

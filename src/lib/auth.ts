@@ -5,7 +5,7 @@
  *  - Failure messages are generic so attackers can't learn which emails exist.
  */
 export class AuthError extends Error {
-  constructor(message: string, public status?: number, public retryAfterSeconds?: number) {
+  constructor(message: string, public status?: number, public retryAfterSeconds?: number, public field?: string) {
     super(message);
   }
 }
@@ -39,6 +39,10 @@ async function post(path: string, body: unknown, failMessage = GENERIC_ERROR): P
       const wait = Number(res.headers.get("Retry-After")) || 60;
       throw new AuthError(`Too many attempts. Try again in ${wait} seconds.`, 429, wait);
     }
+    if (res.status === 409) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string; field?: string };
+      throw new AuthError(data.error ?? failMessage, 409, undefined, data.field);
+    }
     throw new AuthError(failMessage, res.status);
   } catch (err) {
     if (err instanceof AuthError) throw err;
@@ -61,3 +65,15 @@ export const requestPasswordReset = (email: string) =>
 
 export const resetPassword = (token: string, password: string) =>
   post("/api/auth/reset-password", { token, password }, "This reset link is invalid or has expired. Request a new one.");
+
+export const signUp = (payload: Record<string, unknown>) =>
+  post("/api/auth/signup", payload, "We couldn't create your account. Check your details and try again.");
+
+export async function checkUsername(username: string, signal: AbortSignal): Promise<boolean> {
+  const res = await fetch(`/api/auth/username-available?u=${encodeURIComponent(username)}`, {
+    credentials: "include",
+    signal,
+  });
+  if (!res.ok) throw new AuthError("Couldn't check that username.", res.status);
+  return ((await res.json()) as { available: boolean }).available;
+}

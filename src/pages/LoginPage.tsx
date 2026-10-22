@@ -69,7 +69,7 @@ export default function LoginPage({ onSuccess }: Props) {
       </div>
 
       <p className="login__foot">
-        New to SquadSync? <a className="link" href="/signup">Create an account</a>
+        New to SquadSync? <Link className="link" to="/signup">Create an account</Link>
       </p>
     </AuthLayout>
   );

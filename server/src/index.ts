@@ -4,6 +4,7 @@ import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./auth";
 import { passwordResetRouter } from "./passwordReset";
+import { signupRouter } from "./signup";
 
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("GOOGLE_CLIENT_ID is not set: Google sign-in will fail.");
 
@@ -31,3 +32,5 @@ app.use((err: unknown, _req: express.Request, res: express.Response, _next: expr
 
 const port = Number(process.env.PORT) || 4000;
 app.listen(port, () => console.log(`API running on http://localhost:${port}`));
+
+app.use("/api/auth", signupRouter);
