@@ -1,29 +1,29 @@
 {
   "name": "squadsync",
   "private": true,
-  "version": "0.1.0",
-  "type": "module",
+  "version": "0.2.0",
   "scripts": {
-    "dev": "vite",
-    "dev:server": "npm --prefix server run dev",
-    "dev:all": "concurrently -n web,api -c blue,green \"npm run dev\" \"npm run dev:server\"",
-    "install:all": "npm install && npm --prefix server install",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-oauth/google": "^0.12.1",
-    "nodemailer": "^10.1.2",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^6.26.2"
+    "firebase": "^13.1.0",
+    "leaflet": "^1.9.4",
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-leaflet": "^5.0.0"
   },
   "devDependencies": {
-    "@types/react": "^18.3.3",
-    "@types/react-dom": "^18.3.0",
-    "@vitejs/plugin-react": "^4.3.1",
-    "concurrently": "^9.0.1",
-    "typescript": "^5.5.3",
-    "vite": "^5.4.0"
+    "@types/leaflet": "^1.9.12",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.6.3"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
   }
 }
