@@ -1,15 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { GoogleOAuthProvider } from "@react-oauth/google";
 import App from "./App";
+import { StoreProvider } from "./lib/data/store";
+import "leaflet/dist/leaflet.css";
 import "./styles.css";
-
-const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+import "./app.css";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={googleClientId ?? ""}>
+    <StoreProvider>
       <App />
-    </GoogleOAuthProvider>
+    </StoreProvider>
   </StrictMode>
 );

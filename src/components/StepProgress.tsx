@@ -1,4 +1,4 @@
-const LABELS = ["About you", "Availability", "Selfie"];
+const LABELS = ["About you", "Availability"];
 
 export default function StepProgress({ current }: { current: number }) {
   return (
