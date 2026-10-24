@@ -1,7 +1,7 @@
 {
   "name": "squadsync",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,17 +13,24 @@
   },
   "dependencies": {
     "@react-oauth/google": "^0.12.1",
+    "firebase": "^13.1.0",
+    "leaflet": "^1.9.4",
     "nodemailer": "^10.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^6.26.2"
   },
   "devDependencies": {
+    "@types/leaflet": "^1.9.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "concurrently": "^9.0.1",
     "typescript": "^5.5.3",
     "vite": "^5.4.0"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
   }
 }

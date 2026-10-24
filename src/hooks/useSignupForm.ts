@@ -1,6 +1,5 @@
 import { FocusEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { AuthError, checkUsername, signUp } from "../lib/auth";
-import { TERMS_VERSION } from "../content/policies";
+import { useStore } from "../lib/data/store";
 import { FIELD_ORDER, validateField, type SignupErrors, type SignupValues } from "../lib/validation";
 
 export type UsernameStatus = "idle" | "checking" | "available" | "taken";
@@ -16,6 +15,7 @@ const empty: SignupValues = {
 const focusField = (id: string) => document.getElementById(id)?.focus();
 
 export function useSignupForm(onSuccess: () => void) {
+  const { signup, isUsernameTaken } = useStore();
   const [values, setValues] = useState<SignupValues>(empty);
   const [errors, setErrors] = useState<SignupErrors>({});
   const [formError, setFormError] = useState("");
@@ -55,7 +55,7 @@ export function useSignupForm(onSuccess: () => void) {
     revalidate(values, key);
   }
 
-  // Debounced "is this username free?" check against the server.
+  // Debounced "is this username free?" check (MVP: against the mock store instead of the server).
   useEffect(() => {
     const u = values.username.trim().toLowerCase();
     if (!USERNAME_FORMAT.test(u)) return setUsernameStatus("idle");
@@ -65,25 +65,17 @@ export function useSignupForm(onSuccess: () => void) {
       return;
     }
     setUsernameStatus("checking");
-    const controller = new AbortController();
-    const timer = window.setTimeout(async () => {
-      try {
-        if (await checkUsername(u, controller.signal)) {
-          setUsernameStatus("available");
-        } else {
-          taken.current.add(u);
-          setUsernameStatus("taken");
-          setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
-        }
-      } catch {
-        if (!controller.signal.aborted) setUsernameStatus("idle"); // the server re-checks on submit anyway
+    const timer = window.setTimeout(() => {
+      if (isUsernameTaken(u)) {
+        taken.current.add(u);
+        setUsernameStatus("taken");
+        setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
+      } else {
+        setUsernameStatus("available");
       }
-    }, 500);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [values.username]);
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [values.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -100,37 +92,27 @@ export function useSignupForm(onSuccess: () => void) {
     if (first) return focusField(first);
 
     setSubmitting(true);
-    try {
-      await signUp({
-        email: values.email.trim().toLowerCase(),
-        password: values.password,
-        firstName: values.firstName.trim(),
-        lastName: values.lastName.trim(),
-        username: values.username.trim().toLowerCase(),
-        dob: values.dob,
-        phone: values.phone.trim() || undefined,
-        city: values.city.trim(),
-        travelKm: Number(values.travelKm),
-        pronouns: values.pronouns || undefined,
-        bio: values.bio.trim() || undefined,
-        interests: values.interests,
-        transport: values.transport,
-        acceptTerms: values.acceptTerms,
-        termsVersion: TERMS_VERSION,
-      });
+    const result = await signup({
+      email: values.email,
+      password: values.password,
+      firstName: values.firstName.trim(),
+      lastName: values.lastName.trim(),
+      username: values.username,
+      phone: values.phone.trim() || undefined,
+      city: values.city.trim(),
+      travelKm: Number(values.travelKm),
+      pronouns: values.pronouns || undefined,
+      bio: values.bio.trim() || undefined,
+      interests: values.interests,
+      transport: values.transport,
+    });
+    setSubmitting(false);
+    if (result.ok) {
       setValues(empty); // clears the password from memory
-      onSuccess();
-    } catch (err) {
-      const authErr = err instanceof AuthError ? err : new AuthError("Something went wrong. Try again.");
-      if (authErr.status === 409 && authErr.field) {
-        setErrors({ [authErr.field]: authErr.message });
-        focusField(authErr.field);
-      } else {
-        setFormError(authErr.message);
-      }
-    } finally {
-      setSubmitting(false);
+      return onSuccess();
     }
+    setErrors({ [result.field]: result.error });
+    focusField(result.field);
   }
 
   return { values, errors, formError, submitting, usernameStatus, set, blur, submit };

@@ -22,7 +22,7 @@ const yearsAgo = (n: number) => {
 export default function SignupPage() {
   const navigate = useNavigate();
   const { values: v, errors, formError, submitting, usernameStatus, set, blur, submit } = useSignupForm(() =>
-    navigate("/signup/availability")
+    navigate("/profile?tab=availability&welcome=1", { replace: true })
   );
   const usernameHint = {
     idle: "Friends find you with this. Letters, numbers, dots and underscores.",
@@ -34,6 +34,9 @@ export default function SignupPage() {
   return (
     <AuthLayout wide title="Join SquadSync" lead="Tell us about you so your Squad can find you.">
       <StepProgress current={1} />
+      <p className="demo-hint">
+        Demo mode: your account is saved in this browser only. Prefer to skip? <Link className="link" to="/login">Log in as admin</Link>
+      </p>
 
       <form onSubmit={submit} onBlur={blur} noValidate>
         <fieldset className="group">
