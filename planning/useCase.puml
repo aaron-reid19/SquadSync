@@ -1,0 +1,167 @@
+@startuml SquadSyncUseCaseDiagram
+
+title SquadSync Use Case Diagram
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 90
+skinparam padding 12
+skinparam usecase {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam package {
+  BorderColor #475569
+  FontColor #0F172A
+  FontStyle bold
+}
+
+actor Guest as guest
+actor "Authenticated User" as user
+actor "Squad / Event Organizer" as organizer
+actor "Google OAuth Provider" as google
+actor "Protected Microservices" as services
+actor "SMTP Provider" as smtp
+
+organizer --|> user
+
+rectangle "SquadSync Platform\nAll browser requests enter through the API Gateway" as platform {
+
+  package "Authentication Service" as auth {
+    usecase "Create account" as createAccount
+    usecase "Check username availability" as checkUsername
+    usecase "Sign in with password" as passwordLogin
+    usecase "Sign in with Google" as googleLogin
+    usecase "Request password reset" as requestReset
+    usecase "Reset password" as resetPassword
+    usecase "Create browser session" as createSession
+    usecase "Sign out" as signOut
+  }
+
+  package "Identity Service" as identity {
+    usecase "Issue identity token" as issueToken
+    usecase "Publish JWT public keys" as publishJwks
+    usecase "Verify service identity" as verifyIdentity
+  }
+
+  package "Squad Service" as squad {
+    usecase "View squads" as viewSquads
+    usecase "Create squad" as createSquad
+    usecase "Join squad with invite code" as joinSquad
+    usecase "Leave squad" as leaveSquad
+    usecase "Manage squad membership" as manageMembership
+  }
+
+  package "Event Service" as event {
+    usecase "Browse public events" as browseEvents
+    usecase "View event details" as viewEvent
+    usecase "Create event" as createEvent
+    usecase "RSVP to event" as rsvp
+    usecase "Suggest activity" as suggestActivity
+    usecase "Add time slot" as addTimeSlot
+    usecase "Set availability" as setEventAvailability
+    usecase "Vote on activity" as voteActivity
+    usecase "Finalize event plan" as finalizePlan
+    usecase "Reopen event voting" as reopenVoting
+    usecase "Export calendar invite" as exportCalendar
+  }
+
+  package "Chat Service" as chat {
+    usecase "View event chat" as viewChat
+    usecase "Connect to event WebSocket" as connectChat
+    usecase "Send chat message" as sendMessage
+  }
+
+  package "Notification Worker" as notifications {
+    usecase "Send password-reset email" as sendResetEmail
+    usecase "Deliver service notification" as deliverNotification
+  }
+
+  package "Profile" as profile {
+    usecase "View profile" as viewProfile
+    usecase "Update profile" as updateProfile
+    usecase "Set weekly availability" as setWeeklyAvailability
+  }
+}
+
+' Guest authentication and account recovery.
+guest --> createAccount
+guest --> checkUsername
+guest --> passwordLogin
+guest --> googleLogin
+guest --> requestReset
+guest --> resetPassword
+
+createAccount .> checkUsername : <<include>>
+passwordLogin .> createSession : <<include>>
+googleLogin .> createSession : <<include>>
+requestReset .> sendResetEmail : <<include>>
+google --> googleLogin
+smtp --> sendResetEmail
+
+' Identity token handling for protected services.
+createSession ..> issueToken : <<planned integration>>
+services --> verifyIdentity
+services --> publishJwks
+verifyIdentity .> publishJwks : <<include>>
+services --> deliverNotification
+
+' Authenticated user profile and squad actions.
+user --> signOut
+user --> viewProfile
+user --> updateProfile
+user --> setWeeklyAvailability
+user --> viewSquads
+user --> createSquad
+user --> joinSquad
+user --> leaveSquad
+
+organizer --> manageMembership
+manageMembership .> viewSquads : <<include>>
+
+' Event planning and participation.
+user --> browseEvents
+user --> viewEvent
+user --> rsvp
+user --> suggestActivity
+user --> addTimeSlot
+user --> setEventAvailability
+user --> voteActivity
+user --> viewChat
+user --> connectChat
+user --> sendMessage
+user --> exportCalendar
+
+organizer --> createEvent
+organizer --> finalizePlan
+organizer --> reopenVoting
+
+createEvent .> viewSquads : <<include>>
+viewEvent .> viewSquads : <<include>>
+connectChat .> verifyIdentity : <<include>>
+sendMessage .> connectChat : <<include>>
+finalizePlan .> voteActivity : <<include>>
+exportCalendar .> viewEvent : <<include>>
+
+note right of platform
+  The API Gateway is the public HTTP/WebSocket entry point.
+  Internal service calls and JWT/JWKS verification remain
+  inside the platform boundary.
+end note
+
+note bottom of identity
+  Scaffold status: JWT issuance, JWKS publication, and
+  service-side token verification are present.
+end note
+
+note bottom of event
+  Scaffold status: event, RSVP, voting, and persistence
+  workflows are planned but currently return 501.
+end note
+
+@enduml

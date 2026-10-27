@@ -3,13 +3,18 @@
   "private": true,
   "version": "0.2.0",
   "scripts": {
-    "install:all": "npm ci --prefix app/nextjs-ui && npm ci --prefix app/microservices/api-gateway && npm ci --prefix app/microservices/auth-service",
+    "install:all": "npm ci --prefix app/nextjs-ui && npm ci --prefix app/microservices/api-gateway && npm ci --prefix app/microservices/auth-service && npm ci --prefix app/microservices/identity-service && npm ci --prefix app/microservices/squad-service && npm ci --prefix app/microservices/event-service && npm ci --prefix app/microservices/chat-service && npm ci --prefix app/microservices/notification-worker",
     "dev": "npm --prefix app/nextjs-ui run dev",
     "dev:gateway": "npm --prefix app/microservices/api-gateway run dev",
     "dev:api": "npm --prefix app/microservices/auth-service run dev",
+    "dev:identity": "npm --prefix app/microservices/identity-service run dev",
+    "dev:squads": "npm --prefix app/microservices/squad-service run dev",
+    "dev:events": "npm --prefix app/microservices/event-service run dev",
+    "dev:chat": "npm --prefix app/microservices/chat-service run dev",
+    "dev:notifications": "npm --prefix app/microservices/notification-worker run dev",
     "dev:all": "npm --prefix app/nextjs-ui run dev:all",
     "build": "npm --prefix app/nextjs-ui run build",
-    "typecheck": "npm --prefix app/nextjs-ui run typecheck && npm --prefix app/microservices/api-gateway run typecheck && npm --prefix app/microservices/auth-service run typecheck",
+    "typecheck": "npm --prefix app/nextjs-ui run typecheck && npm --prefix app/microservices/api-gateway run typecheck && npm --prefix app/microservices/auth-service run typecheck && npm --prefix app/microservices/identity-service run typecheck && npm --prefix app/microservices/squad-service run typecheck && npm --prefix app/microservices/event-service run typecheck && npm --prefix app/microservices/chat-service run typecheck && npm --prefix app/microservices/notification-worker run typecheck",
     "docker:build": "docker compose -f deploy/compose.yaml build"
   }
 }

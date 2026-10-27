@@ -1,0 +1,319 @@
+@startuml SquadSyncClassDiagram
+
+title SquadSync Service Class Diagram
+
+left to right direction
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 80
+skinparam ranksep 100
+skinparam padding 12
+skinparam backgroundColor #FFFFFF
+skinparam package {
+  BorderColor #475569
+  FontColor #0F172A
+  FontStyle bold
+}
+skinparam class {
+  BorderColor #64748B
+  BackgroundColor #F8FAFC
+  ArrowColor #475569
+}
+
+' The UI is the browser client. All application requests enter through the gateway.
+package "Next.js UI\n(browser client)" as nextjsUi <<container>> {
+  class ApiClient {
+    +request(path, options)
+    +getAccessToken()
+  }
+
+  class StoreProvider {
+    -currentUser
+    -sessionState
+    +login(credentials)
+    +logout()
+    +createSquad(input)
+    +createEvent(input)
+    +sendMessage(input)
+  }
+
+  class ChatClient {
+    -socket
+    +connect()
+    +sendMessage(message)
+    +close()
+  }
+
+  ApiClient ..> StoreProvider : supplies API data
+  ChatClient ..> ApiClient : obtains auth/session context
+}
+
+package "API Gateway\nExpress / WebSocket proxy" as apiGateway <<container>> {
+  class GatewayServer {
+    +listen(port)
+    +health()
+  }
+
+  class RouteProxy {
+    +proxyHttp(request, service)
+    +proxyWebSocket(request, service)
+  }
+
+  GatewayServer *-- RouteProxy
+}
+
+package "Auth Service\nExpress" as authService <<container>> {
+  class AuthController {
+    +csrf()
+    +signup(input)
+    +login(credentials)
+    +googleLogin(credential)
+    +me(session)
+    +logout(session)
+    +forgotPassword(email)
+    +resetPassword(token, password)
+  }
+
+  class AuthRepository {
+    +findUser(email)
+    +createUser(input)
+    +findSession(tokenHash)
+    +createSession(userId)
+    +deleteSession(tokenHash)
+  }
+
+  class AuthDbPool {
+    -databaseUrl
+    -maxConnections
+    +query(sql, values)
+    +connect()
+    +withTransaction(work)
+    +end()
+  }
+
+  class SessionCookie {
+    +set(response, token)
+    +clear(response)
+  }
+
+  AuthController --> AuthRepository
+  AuthController --> SessionCookie
+  AuthRepository --> AuthDbPool
+}
+
+package "Identity Service\nFastify / JWT issuer" as identityService <<container>> {
+  class IdentityController {
+    +issueToken(subject, scopes)
+    +me(token)
+  }
+
+  class JwtIssuer {
+    -privateKey
+    -issuer
+    -audience
+    +sign(subject, scopes)
+  }
+
+  class JwksEndpoint {
+    +getPublicKeys()
+  }
+
+  class IdentityCookie {
+    +setAccessToken(response, token)
+  }
+
+  IdentityController --> JwtIssuer
+  IdentityController --> IdentityCookie
+  JwksEndpoint --> JwtIssuer : publishes public key
+}
+
+package "Squad Service\nFastify" as squadService <<container>> {
+  class SquadController {
+    +listSquads(identity)
+    +createSquad(identity, input)
+    +joinSquad(identity, code)
+    +leaveSquad(identity, squadId)
+  }
+
+  class SquadRepository {
+    +findByMember(userId)
+    +create(ownerId, input)
+    +addMember(squadId, userId)
+    +removeMember(squadId, userId)
+  }
+
+  class SquadDbPool {
+    -databaseUrl
+    -maxConnections
+    +query(sql, values)
+    +connect()
+    +withTransaction(work)
+  }
+
+  class JwtIdentityMiddleware {
+    +verify(request)
+    +requireIdentity(request)
+  }
+
+  SquadController --> JwtIdentityMiddleware
+  SquadController --> SquadRepository
+  SquadRepository --> SquadDbPool
+}
+
+package "Event Service\nFastify" as eventService <<container>> {
+  class EventController {
+    +listEvents(identity, squadId)
+    +createEvent(identity, input)
+    +rsvp(identity, eventId, response)
+    +vote(identity, eventId, optionId)
+    +finalize(identity, eventId, plan)
+  }
+
+  class EventRepository {
+    +findBySquad(squadId)
+    +create(organizerId, input)
+    +recordRsvp(eventId, userId, response)
+    +recordVote(eventId, userId, optionId)
+  }
+
+  class EventDbPool {
+    -databaseUrl
+    -maxConnections
+    +query(sql, values)
+    +connect()
+    +withTransaction(work)
+  }
+
+  class EventIdentityMiddleware {
+    +verify(request)
+    +requireIdentity(request)
+  }
+
+  EventController --> EventIdentityMiddleware
+  EventController --> EventRepository
+  EventRepository --> EventDbPool
+}
+
+package "Chat Service\nFastify / WebSocket" as chatService <<container>> {
+  class ChatController {
+    +listRooms(identity)
+    +listMessages(identity, roomId)
+  }
+
+  class ChatWebSocket {
+    +authenticate(request)
+    +connect(identity, roomId)
+    +receive(message)
+    +broadcast(message)
+    +close()
+  }
+
+  class ChatRepository {
+    +findRooms(userId)
+    +findMessages(roomId)
+    +saveMessage(message)
+  }
+
+  class ChatDbPool {
+    -databaseUrl
+    -maxConnections
+    +query(sql, values)
+    +connect()
+    +withTransaction(work)
+  }
+
+  class ChatIdentityMiddleware {
+    +verify(request)
+    +requireIdentity(request)
+  }
+
+  ChatController --> ChatIdentityMiddleware
+  ChatController --> ChatRepository
+  ChatWebSocket --> ChatIdentityMiddleware
+  ChatWebSocket --> ChatRepository
+  ChatRepository --> ChatDbPool
+}
+
+package "Notification Worker\nFastify / internal worker" as notificationWorker <<container>> {
+  class NotificationEndpoint {
+    +enqueue(notification)
+  }
+
+  class NotificationWorker {
+    +process(notification)
+    +retry(notification)
+  }
+
+  class MailTransport {
+    -smtpUrl
+    +send(message)
+  }
+
+  NotificationEndpoint --> NotificationWorker
+  NotificationWorker --> MailTransport
+}
+
+package "PostgreSQL\nhome server" as postgres <<database>> {
+  class AuthDatabase {
+    users
+    profiles
+    sessions
+    password_resets
+  }
+
+  class SquadDatabase {
+    squads
+    memberships
+  }
+
+  class EventDatabase {
+    events
+    rsvps
+    votes
+  }
+
+  class ChatDatabase {
+    rooms
+    messages
+  }
+}
+
+' Client and gateway relationships.
+ApiClient --> RouteProxy : HTTPS /api/*
+ChatClient --> RouteProxy : WebSocket /api/chat/ws
+RouteProxy --> AuthController : /api/auth
+RouteProxy --> IdentityController : /api/identity
+RouteProxy --> SquadController : /api/squads
+RouteProxy --> EventController : /api/events
+RouteProxy --> ChatController : /api/chat
+RouteProxy --> ChatWebSocket : /api/chat/ws
+
+' JWT verification is performed by each protected service using Identity's JWKS.
+JwtIdentityMiddleware ..> JwksEndpoint : fetches public keys
+EventIdentityMiddleware ..> JwksEndpoint : fetches public keys
+ChatIdentityMiddleware ..> JwksEndpoint : fetches public keys
+
+' Services own their database access. No service reads another service's tables.
+AuthDbPool --> AuthDatabase : auth_db
+SquadDbPool --> SquadDatabase : squad_db
+EventDbPool --> EventDatabase : event_db
+ChatDbPool --> ChatDatabase : chat_db
+
+' Internal service-to-service notification path.
+EventController ..> NotificationEndpoint : notification request
+AuthController ..> NotificationEndpoint : reset email
+
+note right of postgres
+  One PostgreSQL installation may host these logical databases.
+  Each service uses its own DATABASE_URL, role, and connection pool.
+end note
+
+note bottom of identityService
+  Scaffold: JWT/JWKS issuance is present.
+  User persistence remains in Auth Service until the identity data migration.
+end note
+
+@enduml

@@ -1,0 +1,87 @@
+@startuml SquadSyncAuthSequence
+
+title SquadSync Login and Identity Cookie Sequence
+
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 30
+skinparam BoxPadding 15
+skinparam ArrowColor #475569
+skinparam LifeLineBorderColor #94A3B8
+skinparam LifeLineBackgroundColor #F8FAFC
+
+actor Browser
+participant "Cloudflare Edge" as Cloudflare
+participant "cloudflared Tunnel" as Tunnel
+participant "Kubernetes Ingress" as Ingress
+participant "API Gateway" as Gateway
+participant "Auth Service" as Auth
+participant "Identity Service" as Identity
+participant "Google OAuth" as Google
+database "PostgreSQL" as Postgres
+participant "Squad Service" as Squad
+
+== Login ==
+
+alt Password login
+  Browser -> Cloudflare : POST /api/auth/login\nemail + password
+else Google login
+  Browser -> Google : Sign in with Google
+  Google --> Browser : Google ID token credential
+  Browser -> Cloudflare : POST /api/auth/google\ncredential
+end
+
+Cloudflare -> Tunnel : Forward HTTPS request
+Tunnel -> Ingress : Route request
+Ingress -> Gateway : /api/auth/*
+Gateway -> Auth : Login request
+
+alt Password credential
+  Auth -> Postgres : Find user and verify password
+  Postgres --> Auth : User record
+else Google credential
+  Auth -> Google : Verify ID token
+  Google --> Auth : Verified subject and email
+  Auth -> Postgres : Find or create linked user
+  Postgres --> Auth : User record
+end
+
+Auth -> Identity : Planned internal token request
+Identity -> Identity : Sign JWT with private key
+Identity --> Auth : Signed JWT
+
+Auth --> Gateway : Set-Cookie: squadsync-access
+Gateway --> Ingress : Forward Set-Cookie
+Ingress --> Tunnel : HTTPS response
+Tunnel --> Cloudflare : Tunnel response
+Cloudflare --> Browser : Set-Cookie response
+note right of Browser
+  Browser stores the JWT in an
+  HttpOnly, Secure cookie.
+  JavaScript does not read it.
+end note
+
+== Authenticated API request ==
+
+Browser -> Cloudflare : GET /api/squads\nCookie: squadsync-access
+Cloudflare -> Tunnel : Forward HTTPS request
+Tunnel -> Ingress : Route request
+Ingress -> Gateway : /api/squads
+Gateway -> Squad : Forward Cookie header
+Squad -> Identity : Fetch JWKS public key
+Identity --> Squad : Public verification key
+Squad -> Postgres : Query squad_db with Pool
+Postgres --> Squad : Squad data
+Squad --> Gateway : 200 response
+Gateway --> Ingress : Forward response
+Ingress --> Tunnel : HTTPS response
+Tunnel --> Cloudflare : Tunnel response
+Cloudflare --> Browser : 200 response
+
+note over Auth,Identity
+  The Auth-to-Identity token exchange is the target design.
+  The current scaffold has the pieces but does not wire this call yet.
+end note
+
+@enduml

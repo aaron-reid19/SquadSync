@@ -20,6 +20,16 @@ jobs:
             dockerfile: app/microservices/auth-service/Dockerfile
           - name: api-gateway
             dockerfile: app/microservices/api-gateway/Dockerfile
+          - name: identity-service
+            dockerfile: app/microservices/identity-service/Dockerfile
+          - name: squad-service
+            dockerfile: app/microservices/squad-service/Dockerfile
+          - name: event-service
+            dockerfile: app/microservices/event-service/Dockerfile
+          - name: chat-service
+            dockerfile: app/microservices/chat-service/Dockerfile
+          - name: notification-worker
+            dockerfile: app/microservices/notification-worker/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

@@ -18,6 +18,12 @@ jobs:
           cache-dependency-path: |
             app/nextjs-ui/package-lock.json
             app/microservices/auth-service/package-lock.json
+            app/microservices/api-gateway/package-lock.json
+            app/microservices/identity-service/package-lock.json
+            app/microservices/squad-service/package-lock.json
+            app/microservices/event-service/package-lock.json
+            app/microservices/chat-service/package-lock.json
+            app/microservices/notification-worker/package-lock.json
 
       - name: Install UI dependencies
         run: npm ci --prefix app/nextjs-ui
@@ -27,6 +33,14 @@ jobs:
 
       - name: Install API gateway dependencies
         run: npm ci --prefix app/microservices/api-gateway
+
+      - name: Install scaffold service dependencies
+        run: |
+          npm ci --prefix app/microservices/identity-service
+          npm ci --prefix app/microservices/squad-service
+          npm ci --prefix app/microservices/event-service
+          npm ci --prefix app/microservices/chat-service
+          npm ci --prefix app/microservices/notification-worker
 
       - name: Type-check packages
         run: npm run typecheck
@@ -42,3 +56,11 @@ jobs:
 
       - name: Build API gateway image
         run: docker build -f app/microservices/api-gateway/Dockerfile -t squadsync-api-gateway:ci .
+
+      - name: Build scaffold service images
+        run: |
+          docker build -f app/microservices/identity-service/Dockerfile -t squadsync-identity-service:ci .
+          docker build -f app/microservices/squad-service/Dockerfile -t squadsync-squad-service:ci .
+          docker build -f app/microservices/event-service/Dockerfile -t squadsync-event-service:ci .
+          docker build -f app/microservices/chat-service/Dockerfile -t squadsync-chat-service:ci .
+          docker build -f app/microservices/notification-worker/Dockerfile -t squadsync-notification-worker:ci .

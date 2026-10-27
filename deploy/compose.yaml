@@ -20,6 +20,128 @@ services:
       timeout: 5s
       retries: 5
 
+  identity-service:
+    build:
+      context: ..
+      dockerfile: app/microservices/identity-service/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4100
+      IDENTITY_ISSUER: http://identity-service:4100
+      IDENTITY_AUDIENCE: squadsync-api
+      IDENTITY_COOKIE_NAME: squadsync-access
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4100/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  squad-service:
+    build:
+      context: ..
+      dockerfile: app/microservices/squad-service/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4101
+      IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
+      IDENTITY_ISSUER: http://identity-service:4100
+      IDENTITY_COOKIE_NAME: squadsync-access
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4101/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  event-service:
+    build:
+      context: ..
+      dockerfile: app/microservices/event-service/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4102
+      IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
+      IDENTITY_ISSUER: http://identity-service:4100
+      IDENTITY_COOKIE_NAME: squadsync-access
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4102/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  chat-service:
+    build:
+      context: ..
+      dockerfile: app/microservices/chat-service/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4103
+      IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
+      IDENTITY_ISSUER: http://identity-service:4100
+      IDENTITY_COOKIE_NAME: squadsync-access
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      identity-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4103/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  notification-worker:
+    build:
+      context: ..
+      dockerfile: app/microservices/notification-worker/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      PORT: 4104
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:4104/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api-gateway:
     build:
       context: ..
@@ -30,8 +152,20 @@ services:
     environment:
       PORT: 4000
       AUTH_SERVICE_URL: http://auth-service:4001
+      IDENTITY_SERVICE_URL: http://identity-service:4100
+      SQUAD_SERVICE_URL: http://squad-service:4101
+      EVENT_SERVICE_URL: http://event-service:4102
+      CHAT_SERVICE_URL: http://chat-service:4103
     depends_on:
       auth-service:
+        condition: service_healthy
+      identity-service:
+        condition: service_healthy
+      squad-service:
+        condition: service_healthy
+      event-service:
+        condition: service_healthy
+      chat-service:
         condition: service_healthy
     ports:
       - "4000:4000"

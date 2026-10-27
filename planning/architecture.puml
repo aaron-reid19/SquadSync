@@ -1,0 +1,165 @@
+@startuml SquadSyncArchitecture
+
+title SquadSync Deployment and Runtime Architecture
+
+left to right direction
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 100
+skinparam padding 12
+skinparam backgroundColor #FFFFFF
+skinparam package {
+  BorderColor #475569
+  FontColor #0F172A
+  FontStyle bold
+}
+skinparam component {
+  BorderColor #64748B
+  BackgroundColor #F8FAFC
+  FontColor #0F172A
+}
+
+cloud "Browser / Internet" as browser
+cloud "Cloudflare\nDNS + public edge" as cloudflare
+cloud "Google OAuth" as google
+cloud "SMTP Provider" as smtp
+
+package "CI/CD Control Plane" as cicd {
+  artifact "Git Repository" as git
+  component "GitHub Actions\nCI + image builds" as actions
+  artifact "GHCR\ncontainer registry" as registry
+  component "Argo CD\nplanned GitOps controller" as argocd
+}
+
+package "Home Server" as homeServer {
+  component "cloudflared\nCloudflare Tunnel" as tunnel
+
+  package "Application Runtime\nDocker Compose now; Kubernetes later" as runtime {
+    component "Kubernetes Ingress\nplanned" as ingress
+
+    package "Client Workload" as clientWorkload {
+      component "Next.js UI" as ui
+    }
+
+    package "Gateway Workload" as gatewayWorkload {
+      component "API Gateway\nHTTP + WebSocket proxy" as gateway
+    }
+
+    package "Microservice Workloads" as services {
+      package "Auth Service\nExpress" as authBox {
+        component "auth-service" as auth
+      }
+
+      package "Identity Service\nFastify" as identityBox {
+        component "identity-service\nJWT + JWKS" as identity
+      }
+
+      package "Squad Service\nFastify" as squadBox {
+        component "squad-service" as squad
+      }
+
+      package "Event Service\nFastify" as eventBox {
+        component "event-service" as event
+      }
+
+      package "Chat Service\nFastify + WebSocket" as chatBox {
+        component "chat-service" as chat
+      }
+
+      package "Notification Worker\ninternal" as notificationBox {
+        component "notification-worker" as notification
+      }
+    }
+  }
+
+  database "PostgreSQL\nHome Server\nexternal to app workloads" as postgres
+}
+
+' Public request path. The browser later includes the identity cookie automatically.
+browser --> cloudflare : HTTPS login and API requests\nCookie: squadsync-access
+cloudflare --> tunnel : outbound tunnel
+tunnel --> ingress : published hostname
+ingress --> ui : /
+ingress --> gateway : /api/*
+
+' UI and gateway routing for local Compose and same-origin browser requests.
+ui --> gateway : same-origin API rewrite
+
+' Gateway routes requests to internal services.
+gateway --> auth : /api/auth/*\npassword or Google credential
+gateway --> identity : /api/identity/*
+gateway --> squad : /api/squads/*
+gateway --> event : /api/events/*
+gateway --> chat : /api/chat/* + WebSocket
+
+' Target login identity flow. The Auth-to-Identity exchange is not wired in yet.
+auth --> identity : planned token request
+identity --> auth : signed JWT
+auth ..> gateway : Set-Cookie response\nsquadsync-access
+gateway ..> ingress : forwards Set-Cookie
+ingress ..> tunnel : HTTPS response
+tunnel ..> cloudflare : tunnel response
+cloudflare ..> browser : browser stores HttpOnly cookie
+
+' Service-owned database access through per-service PostgreSQL pools.
+auth --> postgres : auth_db / DATABASE_URL
+squad --> postgres : squad_db / DATABASE_URL
+event --> postgres : event_db / DATABASE_URL
+chat --> postgres : chat_db / DATABASE_URL
+
+' Identity verification is internal service-to-service communication.
+squad --> identity : fetches JWKS
+event --> identity : fetches JWKS
+chat --> identity : fetches JWKS
+
+' External integrations.
+auth ..> google : verifies Google ID token
+notification ..> smtp : sends email
+
+' Planned internal notification path; not implemented in the current scaffolds.
+auth ..> notification : planned reset notification
+event ..> notification : planned event notification
+
+' GitOps delivery path.
+git --> actions : pull and validate
+actions --> registry : publish immutable images
+git --> argocd : watches k8s manifests
+argocd <--> runtime : syncs workloads / reports health
+
+note right of runtime
+  Current interim deployment:
+  Docker Compose runs the UI, gateway,
+  and service containers.
+
+  Target deployment:
+  Kubernetes pods and Services run the
+  application workloads on the home server.
+end note
+
+note bottom of postgres
+  PostgreSQL is hosted directly on the home server.
+  Services use separate DATABASE_URL values,
+  roles, and connection pools. It is not public.
+end note
+
+note bottom of gateway
+  The gateway is the only API entry point exposed
+  to the UI. Microservices remain internal.
+end note
+
+note right of auth
+  Password login and Google login converge here:
+  Auth verifies the credential, requests a signed
+  JWT from Identity, and returns it through a
+  Set-Cookie response header.
+
+  The browser stores the HttpOnly cookie and
+  automatically sends Cookie on later requests.
+  JavaScript does not read or inject the JWT.
+end note
+
+@enduml

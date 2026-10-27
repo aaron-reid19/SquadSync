@@ -1,6 +1,6 @@
 # SquadSync
 
-SquadSync is a Next.js UI backed by independently deployable services. PostgreSQL is hosted on the local server; application containers connect to it through `DATABASE_URL`.
+SquadSync is a Next.js UI backed by independently deployable services. The current deployment path uses Docker, with Kubernetes on the home server as the target runtime. PostgreSQL will remain hosted directly on the home server; application workloads connect to it through `DATABASE_URL`.
 
 ## Repository layout
 
@@ -8,15 +8,29 @@ SquadSync is a Next.js UI backed by independently deployable services. PostgreSQ
 app/
 ├── nextjs-ui/                  # Next.js frontend
 └── microservices/
-    ├── api-gateway/            # Single API entry point for the UI
-    └── auth-service/           # Express authentication service
+    ├── api-gateway/            # Single HTTP and WebSocket entry point
+    ├── auth-service/           # Credential authentication and account flows
+    ├── identity-service/       # JWT issuer, JWKS, and identity contract
+    ├── squad-service/          # Squad boundary scaffold
+    ├── event-service/          # Event and voting boundary scaffold
+    ├── chat-service/           # Authenticated chat and WebSocket scaffold
+    └── notification-worker/    # Internal notification delivery scaffold
 database/postgres/              # PostgreSQL migrations and database notes
 deploy/                         # Docker Compose and deployment environment examples
 ```
 
-The event, chat, and notification services are planned boundaries. The current UI still uses its seeded browser demo store for those features while their APIs are built.
+The planned Kubernetes layout will add GitOps manifests alongside the application code:
 
-All browser API requests go to `api-gateway`. The gateway currently routes `/api/auth/*` to `auth-service` and is the extension point for future services.
+```text
+k8s/                            # Planned Kubernetes manifests
+├── base/                        # Shared deployments, services, probes, and config
+└── overlays/home-server/        # Home-server settings and image versions
+argocd/                          # Planned Argo CD Application definitions
+```
+
+The identity, squad, event, chat, and notification services now have deployable Fastify scaffolds. Their domain persistence and business workflows are intentionally not implemented yet; scaffold endpoints return `501` until their contracts are built. The current UI still uses its seeded browser demo store for event, chat, and notification features.
+
+All browser API requests go to `api-gateway`. It routes `/api/auth/*` to `auth-service`, `/api/identity/*` to `identity-service`, `/api/squads/*` to `squad-service`, `/api/events/*` to `event-service`, and `/api/chat/*` plus chat WebSocket upgrades to `chat-service`.
 
 ## Local development
 
@@ -42,7 +56,35 @@ cp deploy/.env.example deploy/.env
 docker compose -f deploy/compose.yaml up --build
 ```
 
-The Compose setup runs the Next.js UI, API gateway, and auth service. It connects to PostgreSQL using the `DATABASE_URL` in `deploy/.env`.
+The Compose setup runs the Next.js UI, API gateway, authentication, identity, squad, event, chat, and notification scaffolds. It connects PostgreSQL-backed services using the `DATABASE_URL` in `deploy/.env`.
+
+Docker Compose is the interim deployment target for local development and initial home-server deployments. It keeps PostgreSQL outside the application stack because the database is hosted directly on the home server.
+
+## Kubernetes and GitOps direction
+
+The long-term deployment target is a Kubernetes cluster running on the home server:
+
+- The Next.js UI, API gateway, and each microservice will run as independently deployable Kubernetes workloads.
+- PostgreSQL will run directly on the home server, outside the Kubernetes application workloads. Database credentials will be provided through server-managed secrets and `DATABASE_URL`.
+- Kubernetes readiness and liveness probes will use service health endpoints so traffic is sent only to ready pods and unhealthy pods are restarted when needed.
+- Cloudflare will be the public edge. A Cloudflare Tunnel will route the domain to the Kubernetes ingress without exposing the home server's application ports directly.
+- Argo CD will watch the Kubernetes manifests in Git, report sync and resource health, and reconcile the home-server cluster to the desired state.
+- CI will build, test, and publish immutable Docker image tags. Argo CD will then deploy approved image changes through Git-managed manifests.
+
+Argo CD reports the health of Kubernetes resources, while Kubernetes probes determine whether an application pod is ready to receive traffic or needs to be restarted. The gateway and auth service already expose `/health` endpoints that can become Kubernetes probes.
+
+The migration from Compose to Kubernetes will be incremental: stabilize the Docker images and health checks first, add Kubernetes base manifests and a home-server overlay, then connect those manifests to Argo CD.
+
+## Domain and Cloudflare
+
+The production hostname will be managed through Cloudflare. The planned request path is:
+
+```text
+Browser → Cloudflare → Cloudflare Tunnel → Kubernetes ingress → Next.js UI
+                                                        └── /api/* → API gateway
+```
+
+Only the application hostname should be public. The API gateway and microservices remain internal to the cluster, and PostgreSQL remains reachable only from the home server and authorized workloads. See [the Cloudflare deployment plan](docs/cloudflare.md).
 
 ## Database migrations
 
@@ -60,7 +102,7 @@ The intended pipeline is:
 1. Install the UI and service lockfiles with `npm ci`.
 2. Type-check both packages.
 3. Build the Next.js application.
-4. Build both Docker images.
-5. Publish versioned images from the main branch.
+4. Build the UI, gateway, authentication, identity, squad, event, chat, and notification images.
+5. Publish immutable, versioned images from the main branch.
 
-Deployment to the local server should pull those images and run the Compose file with the server's environment file.
+During the transition, deployment to the local server will pull those images and run the Compose file with the server's environment file. The final workflow will update the Kubernetes manifests, after which Argo CD will synchronize the home-server cluster and report deployment health.

@@ -1,0 +1,228 @@
+@startuml SquadSyncERD
+
+title SquadSync Data Ownership and Entity Relationship Diagram
+
+left to right direction
+
+skinparam linetype ortho
+skinparam nodesep 70
+skinparam ranksep 90
+skinparam padding 12
+skinparam shadowing false
+skinparam entity {
+  BackgroundColor #F8FAFC
+  BorderColor #64748B
+  FontColor #0F172A
+}
+skinparam package {
+  BorderColor #475569
+  FontColor #0F172A
+  FontStyle bold
+}
+
+' Auth Service owns the currently implemented user and session data.
+package "Auth Service / auth_db\nimplemented" as authDb <<database>> {
+  entity users {
+    * id : integer <<PK>>
+    --
+    email : text <<UK>>
+    password_hash : text <<nullable>>
+    google_sub : text <<UK, nullable>>
+    failed_attempts : integer
+    locked_until : timestamp
+    created_at : timestamp
+  }
+
+  entity profiles {
+    * user_id : integer <<PK, FK>>
+    --
+    first_name : text
+    last_name : text
+    username : text <<UK>>
+    dob : date
+    phone : text <<nullable>>
+    city : text
+    travel_km : integer
+    pronouns : text <<nullable>>
+    bio : text <<nullable>>
+    interests : jsonb
+    transport : jsonb
+    onboarding_step : integer
+    terms_version : text
+    terms_accepted_at : timestamp
+    created_at : timestamp
+  }
+
+  entity sessions {
+    * token_hash : text <<PK>>
+    --
+    user_id : integer <<FK>>
+    expires_at : timestamp
+  }
+
+  entity password_resets {
+    * token_hash : text <<PK>>
+    --
+    user_id : integer <<FK>>
+    expires_at : timestamp
+    created_at : timestamp
+  }
+
+  users ||--o| profiles : has
+  users ||--o{ sessions : owns
+  users ||--o{ password_resets : requests
+}
+
+' Squad Service owns squads and membership. User IDs are external references to auth_db.users.
+package "Squad Service / squad_db\nplanned" as squadDb <<database>> {
+  entity squads {
+    * id : uuid <<PK>>
+    --
+    name : text
+    join_code : text <<UK>>
+    created_by_user_id : integer <<external user>>
+    created_at : timestamp
+  }
+
+  entity squad_members {
+    * squad_id : uuid <<PK, FK>>
+    * user_id : integer <<PK, external user>>
+    --
+    role : text
+    joined_at : timestamp
+  }
+
+  squads ||--o{ squad_members : contains
+}
+
+' Event Service owns event planning, availability, suggestions, votes, and RSVPs.
+package "Event Service / event_db\nplanned" as eventDb <<database>> {
+  entity events {
+    * id : uuid <<PK>>
+    --
+    squad_id : uuid <<external squad>>
+    organizer_user_id : integer <<external user>>
+    title : text
+    description : text
+    area_name : text
+    latitude : decimal
+    longitude : decimal
+    visibility : text
+    status : text
+    vote_deadline : timestamp
+    created_at : timestamp
+  }
+
+  entity event_slots {
+    * id : uuid <<PK>>
+    --
+    event_id : uuid <<FK>>
+    starts_at : timestamp
+    ends_at : timestamp
+  }
+
+  entity event_suggestions {
+    * id : uuid <<PK>>
+    --
+    event_id : uuid <<FK>>
+    suggested_by_user_id : integer <<external user>>
+    title : text
+    category : text
+    note : text <<nullable>>
+    price : smallint
+  }
+
+  entity event_suggestion_votes {
+    * suggestion_id : uuid <<PK, FK>>
+    * user_id : integer <<PK, external user>>
+    --
+    vote : text
+    created_at : timestamp
+  }
+
+  entity event_attendees {
+    * event_id : uuid <<PK, FK>>
+    * user_id : integer <<PK, external user>>
+    --
+    response : text
+    responded_at : timestamp
+  }
+
+  entity event_final_plans {
+    * event_id : uuid <<PK, FK>>
+    --
+    suggestion_id : uuid <<FK>>
+    slot_id : uuid <<FK>>
+    venue_id : text <<external venue>>
+    finalized_at : timestamp
+  }
+
+  events ||--o{ event_slots : offers
+  events ||--o{ event_suggestions : receives
+  event_suggestions ||--o{ event_suggestion_votes : receives
+  events ||--o{ event_attendees : tracks
+  events ||--o| event_final_plans : finalizes
+  event_suggestions ||--o| event_final_plans : selects
+  event_slots ||--o| event_final_plans : selects
+}
+
+' Chat Service owns rooms, membership, and messages. Event and user IDs are external references.
+package "Chat Service / chat_db\nplanned" as chatDb <<database>> {
+  entity chat_rooms {
+    * id : uuid <<PK>>
+    --
+    event_id : uuid <<external event, nullable>>
+    created_by_user_id : integer <<external user>>
+    name : text
+    created_at : timestamp
+  }
+
+  entity chat_room_members {
+    * room_id : uuid <<PK, FK>>
+    * user_id : integer <<PK, external user>>
+    --
+    joined_at : timestamp
+  }
+
+  entity chat_messages {
+    * id : uuid <<PK>>
+    --
+    room_id : uuid <<FK>>
+    user_id : integer <<external user, nullable for system>>
+    body : text
+    created_at : timestamp
+  }
+
+  chat_rooms ||--o{ chat_room_members : contains
+  chat_rooms ||--o{ chat_messages : contains
+}
+
+' Cross-database relationships are conceptual only; PostgreSQL cannot enforce these as FKs.
+users ||..o{ squad_members : joins
+users ||..o{ squads : creates
+users ||..o{ events : organizes
+users ||..o{ event_suggestion_votes : casts
+users ||..o{ event_attendees : responds
+users ||..o{ event_suggestions : proposes
+users ||..o{ chat_room_members : joins
+users ||..o{ chat_messages : sends
+squads ||..o{ events : schedules
+events ||..o{ chat_rooms : discusses
+
+note right of authDb
+  Current migration source:
+  database/postgres/migrations/001_initial_schema.sql
+
+  Auth Service currently owns user persistence.
+  Identity Service issues JWTs and exposes JWKS;
+  it has no database tables yet.
+end note
+
+note bottom of chatDb
+  Each service uses its own DATABASE_URL,
+  PostgreSQL role, and connection pool.
+  Notification Worker has no database yet;
+  it sends through configured SMTP.
+end note
+
+@enduml
