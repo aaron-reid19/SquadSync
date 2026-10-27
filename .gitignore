@@ -8,3 +8,6 @@ dist
 *.tsbuildinfo
 .next/
 next-env.d.ts
+coverage/
+deploy/.env
+postgres-data/

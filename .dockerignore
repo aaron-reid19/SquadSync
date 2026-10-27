@@ -1,0 +1,13 @@
+.git
+.gitignore
+**/node_modules
+**/.next
+**/dist
+**/coverage
+**/.env
+**/.env.local
+*.db
+*.db-wal
+*.db-shm
+postgres-data
+README.md

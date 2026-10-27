@@ -1,36 +1,15 @@
 {
-  "name": "squadsync",
+  "name": "squadsync-monorepo",
   "private": true,
   "version": "0.2.0",
-  "type": "module",
   "scripts": {
-    "dev": "next dev -p 3000",
-    "dev:server": "npm --prefix server run dev",
-    "dev:all": "concurrently -n web,api -c blue,green \"npm run dev\" \"npm run dev:server\"",
-    "install:all": "npm install && npm --prefix server install",
-    "build": "next build",
-    "start": "next start -p 3000"
-  },
-  "dependencies": {
-    "@fontsource/archivo-black": "^5.3.0",
-    "@fontsource/dm-sans": "^5.3.0",
-    "@react-oauth/google": "^0.12.1",
-    "firebase": "^13.1.0",
-    "leaflet": "^1.9.4",
-    "next": "^16.4.3",
-    "nodemailer": "^10.1.2",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "react-leaflet": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/leaflet": "^1.9.12",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "concurrently": "^9.0.1",
-    "typescript": "^5.5.3"
-  },
-  "overrides": {
-    "@grpc/grpc-js": "^1.14.6"
+    "install:all": "npm ci --prefix app/nextjs-ui && npm ci --prefix app/microservices/api-gateway && npm ci --prefix app/microservices/auth-service",
+    "dev": "npm --prefix app/nextjs-ui run dev",
+    "dev:gateway": "npm --prefix app/microservices/api-gateway run dev",
+    "dev:api": "npm --prefix app/microservices/auth-service run dev",
+    "dev:all": "npm --prefix app/nextjs-ui run dev:all",
+    "build": "npm --prefix app/nextjs-ui run build",
+    "typecheck": "npm --prefix app/nextjs-ui run typecheck && npm --prefix app/microservices/api-gateway run typecheck && npm --prefix app/microservices/auth-service run typecheck",
+    "docker:build": "docker compose -f deploy/compose.yaml build"
   }
 }
