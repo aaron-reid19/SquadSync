@@ -5,7 +5,7 @@ import { ADMIN, AVATAR_COLORS, createSeed, DB_VERSION } from "./seed";
 import type { Area, AvailabilityKey, DB, Message, Squad, SquadEvent, Suggestion, User } from "./types";
 import { uid } from "../format";
 
-// Firebase is only downloaded when VITE_DATA_SOURCE=firebase, so mock mode stays light.
+// Firebase is only downloaded when NEXT_PUBLIC_DATA_SOURCE=firebase, so mock mode stays light.
 const DATA_SOURCE = process.env.NEXT_PUBLIC_DATA_SOURCE === "firebase" ? "firebase" : "mock";
 const firestore = () => import("./firebaseRepo");
 

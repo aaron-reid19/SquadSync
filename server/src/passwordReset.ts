@@ -35,7 +35,7 @@ function sendResetEmail(user: { id: number; email: string }) {
   ).run(sha256(token), user.id, now + TOKEN_TTL_MS, now);
 
   // The link base comes from config, never from the request's Host header.
-  const base = process.env.APP_URL ?? "http://localhost:5173";
+  const base = process.env.APP_URL ?? "http://localhost:3000";
   const link = `${base}/reset-password?token=${token}`;
   const text =
     `Someone asked to reset your SquadSync password.\n\nSet a new one here (valid for 30 minutes):\n${link}\n\n` +
