@@ -1,21 +1,24 @@
+"use client";
+
 import { useEffect } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
 import { useLoginForm } from "../hooks/useLoginForm";
 import { useStore } from "../lib/data/store";
 
 export default function LoginPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { ready, me } = useStore();
-  const next = useSearchParams()[0].get("next") || "/";
+  const next = useSearchParams().get("next") || "/";
   const target = next.startsWith("/") && !next.startsWith("//") ? next : "/";
-  const form = useLoginForm(() => navigate(target, { replace: true }));
+  const form = useLoginForm(() => router.replace(target));
 
   // Already signed in? Skip the form.
   useEffect(() => {
-    if (ready && me) navigate(target, { replace: true });
-  }, [ready, me, target, navigate]);
+    if (ready && me) router.replace(target);
+  }, [ready, me, target, router]);
 
   return (
     <AuthLayout title="Welcome back" lead="Log in to plan your next hangout with your Squad.">
@@ -58,7 +61,7 @@ export default function LoginPage() {
       </form>
 
       <p className="login__foot">
-        New to SquadSync? <Link className="link" to="/signup">Create an account</Link>
+        New to SquadSync? <Link className="link" href="/signup">Create an account</Link>
       </p>
     </AuthLayout>
   );

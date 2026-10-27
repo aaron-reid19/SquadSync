@@ -1,4 +1,7 @@
-import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import ChatPanel from "../components/ChatPanel";
 import Tabs from "../components/Tabs";
 import VotingPanel from "../components/VotingPanel";
@@ -8,8 +11,8 @@ type Tab = "chat" | "vote";
 
 export default function EventChatPage() {
   const { id } = useParams<{ id: string }>();
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const params = useSearchParams();
+  const router = useRouter();
   const { db } = useStore();
   const me = useMe();
   const tab: Tab = params.get("tab") === "vote" ? "vote" : "chat";
@@ -20,7 +23,7 @@ export default function EventChatPage() {
     return (
       <div className="card form-card">
         <h1 className="h1">Event not found</h1>
-        <Link to="/" className="btn btn--primary btn--auto">Back to Main</Link>
+        <Link href="/" className="btn btn--primary btn--auto">Back to Main</Link>
       </div>
     );
   }
@@ -30,7 +33,7 @@ export default function EventChatPage() {
       <div className="card form-card">
         <h1 className="h1">Sign up to join the chat</h1>
         <p className="lead">Chat and voting are open to {squad.name} members and people who signed up.</p>
-        <Link to={`/events/${event.id}`} className="btn btn--primary btn--auto">View event</Link>
+        <Link href={`/events/${event.id}`} className="btn btn--primary btn--auto">View event</Link>
       </div>
     );
   }
@@ -42,14 +45,14 @@ export default function EventChatPage() {
   return (
     <div className="chat-page">
       <div className="chat-page__head">
-        <Link to={`/events/${event.id}`} className="back">← Event details</Link>
+        <Link href={`/events/${event.id}`} className="back">← Event details</Link>
         <h1 className="h1 h1--sm">{squad.emoji} {event.title}</h1>
         <p className="muted small">{squad.name} · {squad.memberIds.length} members</p>
       </div>
       <Tabs<Tab>
         label="Event sections"
         active={tab}
-        onChange={(t) => navigate(`/events/${event.id}/chat${t === "vote" ? "?tab=vote" : ""}`, { replace: true })}
+        onChange={(t) => router.replace(`/events/${event.id}/chat${t === "vote" ? "?tab=vote" : ""}`)}
         tabs={[
           { id: "chat", label: "💬 Chat" },
           { id: "vote", label: event.status === "final" ? "✅ Plan" : "🗳️ Voting", badge: toSwipe },

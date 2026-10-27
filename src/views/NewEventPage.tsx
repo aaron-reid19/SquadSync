@@ -1,4 +1,7 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import Field from "../components/Field";
 import { AREAS } from "../lib/data/seed";
@@ -29,8 +32,8 @@ function nextDate(day: number, hour: number) {
 interface SlotRow { id: string; start: string; hours: number }
 
 export default function NewEventPage() {
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const params = useSearchParams();
+  const router = useRouter();
   const me = useMe();
   const { db, user, createEvent } = useStore();
   const mySquads = db.squads.filter((s) => s.memberIds.includes(me.id));
@@ -56,7 +59,7 @@ export default function NewEventPage() {
       <div className="card form-card">
         <h1 className="h1">Create an event</h1>
         <p className="lead">Events belong to a Squad. Create or join one first.</p>
-        <Link to="/" className="btn btn--primary btn--auto">Go to your Squads</Link>
+        <Link href="/" className="btn btn--primary btn--auto">Go to your Squads</Link>
       </div>
     );
   }
@@ -104,7 +107,7 @@ export default function NewEventPage() {
       }).sort((a, b) => a.start.localeCompare(b.start)),
       ideas: ideas.map((c) => ({ title: IDEA_TITLES[c] ?? c, category: c, price: 2 as const })),
     });
-    navigate(`/events/${event.id}/chat?tab=vote`);
+    router.push(`/events/${event.id}/chat?tab=vote`);
   }
 
   return (

@@ -1,5 +1,7 @@
+"use client";
+
 import { FormEvent, useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import AuthLayout from "../components/AuthLayout";
 import { AuthError, requestPasswordReset } from "../lib/auth";
 import { validateEmail } from "../lib/validation";
@@ -39,7 +41,7 @@ export default function ForgotPasswordPage() {
           If an account exists for <strong>{sentTo}</strong>, we've sent a link to reset your password.
           It works for 30 minutes. Not there? Check your spam folder.
         </p>
-        <Link className="btn btn--primary btn--link" to="/login">Back to log in</Link>
+        <Link className="btn btn--primary btn--link" href="/login">Back to log in</Link>
       </AuthLayout>
     );
   }
@@ -74,7 +76,7 @@ export default function ForgotPasswordPage() {
         </button>
       </form>
 
-      <p className="login__foot"><Link className="link" to="/login">Back to log in</Link></p>
+      <p className="login__foot"><Link className="link" href="/login">Back to log in</Link></p>
     </AuthLayout>
   );
 }

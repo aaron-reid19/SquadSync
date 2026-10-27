@@ -1,10 +1,12 @@
+"use client";
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ADMIN, AVATAR_COLORS, createSeed, DB_VERSION } from "./seed";
 import type { Area, AvailabilityKey, DB, Message, Squad, SquadEvent, Suggestion, User } from "./types";
 import { uid } from "../format";
 
 // Firebase is only downloaded when VITE_DATA_SOURCE=firebase, so mock mode stays light.
-const DATA_SOURCE = import.meta.env.VITE_DATA_SOURCE === "firebase" ? "firebase" : "mock";
+const DATA_SOURCE = process.env.NEXT_PUBLIC_DATA_SOURCE === "firebase" ? "firebase" : "mock";
 const firestore = () => import("./firebaseRepo");
 
 const DB_KEY = "squadsync:db";

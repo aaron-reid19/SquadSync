@@ -1,4 +1,7 @@
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import AvailabilityGrid from "../components/AvailabilityGrid";
 import { Avatar } from "../components/Avatar";
@@ -16,8 +19,8 @@ import { BLOCKS, keyOf } from "../lib/availability";
 type Tab = "info" | "availability";
 
 export default function ProfilePage() {
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const params = useSearchParams();
+  const router = useRouter();
   const tab: Tab = params.get("tab") === "availability" ? "availability" : "info";
   const welcome = params.get("welcome") === "1";
   const me = useMe();
@@ -41,7 +44,7 @@ export default function ProfilePage() {
       <Tabs<Tab>
         label="Profile sections"
         active={tab}
-        onChange={(t) => navigate(`/profile?tab=${t}${welcome ? "&welcome=1" : ""}`, { replace: true })}
+        onChange={(t) => router.replace(`/profile?tab=${t}${welcome ? "&welcome=1" : ""}`)}
         tabs={[{ id: "info", label: "Personal info" }, { id: "availability", label: "Availability" }]}
       />
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="tabpanel">
@@ -179,7 +182,7 @@ function Availability({ welcome }: { welcome: boolean }) {
         <button type="button" className="btn btn--primary btn--auto" onClick={() => { setAvailability(value); setSaved(true); }}>
           Save availability
         </button>
-        {welcome && saved && <Link to="/" className="btn btn--auto btn--blue">Go to SquadSync →</Link>}
+        {welcome && saved && <Link href="/" className="btn btn--auto btn--blue">Go to SquadSync →</Link>}
       </div>
     </div>
   );

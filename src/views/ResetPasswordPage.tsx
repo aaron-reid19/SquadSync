@@ -1,5 +1,8 @@
+"use client";
+
 import { FormEvent, useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import AuthLayout from "../components/AuthLayout";
 import PasswordField from "../components/PasswordField";
 import { AuthError, resetPassword } from "../lib/auth";
@@ -7,13 +10,13 @@ import { validateNewPassword, type NewPasswordErrors } from "../lib/validation";
 import PasswordRules from "../components/PasswordRules";
 
 export default function ResetPasswordPage() {
-  const [params] = useSearchParams();
-  const navigate = useNavigate();
+  const params = useSearchParams();
+  const router = useRouter();
   // Keep the token in memory, then remove it from the address bar and browser history.
   const [token] = useState(() => params.get("token") ?? "");
   useEffect(() => {
-    if (token) navigate("/reset-password", { replace: true });
-  }, [token, navigate]);
+    if (token) router.replace("/reset-password");
+  }, [token, router]);
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -53,7 +56,7 @@ export default function ResetPasswordPage() {
   if (done) {
     return (
       <AuthLayout title="Password updated" lead="You're signed out on all devices. Log in with your new password.">
-        <Link className="btn btn--primary btn--link" to="/login">Log in</Link>
+        <Link className="btn btn--primary btn--link" href="/login">Log in</Link>
       </AuthLayout>
     );
   }
@@ -61,7 +64,7 @@ export default function ResetPasswordPage() {
   if (!token) {
     return (
       <AuthLayout title="Link not valid" lead="This reset link is missing or has expired.">
-        <Link className="btn btn--primary btn--link" to="/forgot-password">Request a new link</Link>
+        <Link className="btn btn--primary btn--link" href="/forgot-password">Request a new link</Link>
       </AuthLayout>
     );
   }
@@ -91,7 +94,7 @@ export default function ResetPasswordPage() {
 
         <div className="form__status" role="alert">
           {formError}{" "}
-          {linkExpired && <Link className="link" to="/forgot-password">Request a new link</Link>}
+          {linkExpired && <Link className="link" href="/forgot-password">Request a new link</Link>}
         </div>
 
         <button className="btn btn--primary" type="submit" disabled={submitting}>
