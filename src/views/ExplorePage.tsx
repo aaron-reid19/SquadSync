@@ -1,4 +1,6 @@
-import { Link } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import EventCard from "../components/EventCard";
 import VenueMap from "../components/VenueMap";
@@ -70,7 +72,7 @@ export default function ExplorePage() {
               return (
                 <EventCard key={e.id} event={e} action={
                   going ? (
-                    <Link to={`/events/${e.id}`} className="btn btn--small btn--green">✓ Signed up</Link>
+                    <Link href={`/events/${e.id}`} className="btn btn--small btn--green">✓ Signed up</Link>
                   ) : (
                     <button type="button" className="btn btn--small btn--primary" onClick={() => rsvp(e.id, true)}>Sign up</button>
                   )
@@ -95,7 +97,7 @@ export default function ExplorePage() {
                     <span className="muted small">{v.category} · ★ {v.rating} · {priceLabel(v.price)} · {v.km.toFixed(1)} km</span>
                   </span>
                 </button>
-                <Link className="btn btn--small btn--auto" to={`/events/new?idea=${encodeURIComponent(v.category)}`}>Plan this</Link>
+                <Link className="btn btn--small btn--auto" href={`/events/new?idea=${encodeURIComponent(v.category)}`}>Plan this</Link>
               </article>
             ))}
           </div>

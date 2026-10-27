@@ -1,4 +1,7 @@
-import { Link, useParams } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Avatar } from "../components/Avatar";
 import FinalPlan from "../components/FinalPlan";
 import { useMe, useStore } from "../lib/data/store";
@@ -17,7 +20,7 @@ export default function EventDetailsPage() {
       <div className="card form-card">
         <h1 className="h1">Event not found</h1>
         <p className="lead">It may have been deleted, or the link is wrong.</p>
-        <Link to="/" className="btn btn--primary btn--auto">Back to Main</Link>
+        <Link href="/" className="btn btn--primary btn--auto">Back to Main</Link>
       </div>
     );
   }
@@ -31,7 +34,7 @@ export default function EventDetailsPage() {
       <div className="card form-card">
         <h1 className="h1">This event is private</h1>
         <p className="lead">Only members of {squad.name} can see it. Ask a member for their invite code.</p>
-        <Link to="/" className="btn btn--primary btn--auto">Back to Main</Link>
+        <Link href="/" className="btn btn--primary btn--auto">Back to Main</Link>
       </div>
     );
   }
@@ -45,7 +48,7 @@ export default function EventDetailsPage() {
 
   return (
     <>
-      <Link to="/" className="back">← Main</Link>
+      <Link href="/" className="back">← Main</Link>
       <section className="event-hero card">
         <div className="event-hero__art" style={{ background: toneFor(headerCategory ?? event.title) }} aria-hidden="true">
           {emojiFor(headerCategory ?? "")}
@@ -76,11 +79,11 @@ export default function EventDetailsPage() {
         {canParticipate ? (
           <>
             {!isFinal && (
-              <Link to={`/events/${event.id}/chat?tab=vote`} className="btn btn--primary btn--auto">
+              <Link href={`/events/${event.id}/chat?tab=vote`} className="btn btn--primary btn--auto">
                 {hasFinishedVoting(event, me.id) ? "See the vote" : "Vote now"}
               </Link>
             )}
-            <Link to={`/events/${event.id}/chat`} className="btn btn--auto btn--blue">💬 Open chat</Link>
+            <Link href={`/events/${event.id}/chat`} className="btn btn--auto btn--blue">💬 Open chat</Link>
           </>
         ) : (
           <p className="muted">Sign up to join the chat and vote.</p>

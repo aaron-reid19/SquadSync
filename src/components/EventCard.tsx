@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import Link from "next/link";
 import type { SquadEvent } from "../lib/data/types";
 import { useStore } from "../lib/data/store";
 import { emojiFor, fmtRelative, fmtSlot, toneFor } from "../lib/format";
@@ -26,7 +26,7 @@ export default function EventCard({ event, action }: { event: SquadEvent; action
           {event.visibility === "public" && <span className="pill">Public</span>}
         </div>
         <h3 className="event-card__title">
-          <Link to={`/events/${event.id}`} className="stretched">{event.title}</Link>
+          <Link href={`/events/${event.id}`} className="stretched">{event.title}</Link>
         </h3>
         {isFinal ? (
           <p className="event-card__line">

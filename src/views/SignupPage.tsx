@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import AuthLayout from "../components/AuthLayout";
 import ChipGroup from "../components/ChipGroup";
 import Field from "../components/Field";
@@ -20,9 +23,9 @@ const yearsAgo = (n: number) => {
 };
 
 export default function SignupPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { values: v, errors, formError, submitting, usernameStatus, set, blur, submit } = useSignupForm(() =>
-    navigate("/profile?tab=availability&welcome=1", { replace: true })
+    router.replace("/profile?tab=availability&welcome=1")
   );
   const usernameHint = {
     idle: "Friends find you with this. Letters, numbers, dots and underscores.",
@@ -35,7 +38,7 @@ export default function SignupPage() {
     <AuthLayout wide title="Join SquadSync" lead="Tell us about you so your Squad can find you.">
       <StepProgress current={1} />
       <p className="demo-hint">
-        Demo mode: your account is saved in this browser only. Prefer to skip? <Link className="link" to="/login">Log in as admin</Link>
+        Demo mode: your account is saved in this browser only. Prefer to skip? <Link className="link" href="/login">Log in as admin</Link>
       </p>
 
       <form onSubmit={submit} onBlur={blur} noValidate>
@@ -126,7 +129,7 @@ export default function SignupPage() {
         </button>
       </form>
 
-      <p className="login__foot">Already have an account? <Link className="link" to="/login">Log in</Link></p>
+      <p className="login__foot">Already have an account? <Link className="link" href="/login">Log in</Link></p>
     </AuthLayout>
   );
 }

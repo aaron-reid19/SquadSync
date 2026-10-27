@@ -1,13 +1,14 @@
-import { lazy, Suspense } from "react";
+"use client";
+
+import dynamic from "next/dynamic";
 import type { VenueMapProps } from "./VenueMapInner";
 
-// Leaflet is big, so it loads only when a page actually shows a map.
-const VenueMapInner = lazy(() => import("./VenueMapInner"));
+// Leaflet touches `window`, so it must never run during server rendering.
+const VenueMapInner = dynamic(() => import("./VenueMapInner"), {
+  ssr: false,
+  loading: () => <div className="map map--loading">Loading map…</div>,
+});
 
 export default function VenueMap(props: VenueMapProps) {
-  return (
-    <Suspense fallback={<div className="map map--loading">Loading map…</div>}>
-      <VenueMapInner {...props} />
-    </Suspense>
-  );
+  return <VenueMapInner {...props} />;
 }

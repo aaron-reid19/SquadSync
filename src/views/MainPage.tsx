@@ -1,4 +1,7 @@
-import { Link, useNavigate } from "react-router-dom";
+"use client";
+
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { AvatarStack } from "../components/Avatar";
 import EventCard from "../components/EventCard";
@@ -11,7 +14,7 @@ const EMOJIS = ["🎉", "🎳", "🍕", "🎮", "🥾", "🎤", "🎲", "☕", "
 export default function MainPage() {
   const { db, user, createSquad, joinSquad } = useStore();
   const me = useMe();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [modal, setModal] = useState<"create" | "join" | null>(null);
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState(EMOJIS[0]);
@@ -73,7 +76,7 @@ export default function MainPage() {
           </p>
         </div>
         <div className="hero__actions">
-          <Link to="/events/new" className="btn btn--primary btn--auto">Create event</Link>
+          <Link href="/events/new" className="btn btn--primary btn--auto">Create event</Link>
         </div>
       </section>
 
@@ -83,7 +86,7 @@ export default function MainPage() {
           <div className="grid">
             {needsVote.map((e) => (
               <EventCard key={e.id} event={e} action={
-                <Link to={`/events/${e.id}/chat?tab=vote`} className="btn btn--primary btn--small">Swipe now</Link>
+                <Link href={`/events/${e.id}/chat?tab=vote`} className="btn btn--primary btn--small">Swipe now</Link>
               } />
             ))}
           </div>
@@ -135,7 +138,7 @@ export default function MainPage() {
                       {copied === s.code ? "Copied!" : <>Invite code <strong>{s.code}</strong></>}
                     </button>
                     <button type="button" className="btn btn--small btn--primary btn--auto"
-                      onClick={() => navigate(`/events/new?squad=${s.id}`)}>
+                      onClick={() => router.push(`/events/new?squad=${s.id}`)}>
                       Plan something
                     </button>
                   </div>
