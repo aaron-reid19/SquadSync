@@ -56,10 +56,13 @@ export default function NewEventPage() {
 
   if (mySquads.length === 0) {
     return (
-      <div className="card form-card">
-        <h1 className="h1">Create an event</h1>
-        <p className="lead">Events belong to a Squad. Create or join one first.</p>
-        <Link href="/" className="btn btn--primary btn--auto">Go to your Squads</Link>
+      <div className="event-create event-create--empty">
+        <div className="card form-card event-create__empty-card">
+          <span className="event-create__eyebrow">ONE PLAN STARTS WITH A SQUAD</span>
+          <h1 className="h1">Create an event</h1>
+          <p className="lead">Events belong to a Squad. Create or join one first, then you can bring everyone together here.</p>
+          <Link href="/" className="btn btn--primary btn--auto">Go to your Squads</Link>
+        </div>
       </div>
     );
   }
@@ -111,100 +114,109 @@ export default function NewEventPage() {
   }
 
   return (
-    <>
-      <section className="hero">
-        <div>
+    <div className="event-create">
+      <header className="event-create__header">
+          <span className="event-create__eyebrow">MAKE A PLAN TOGETHER</span>
           <h1 className="h1">Create an event</h1>
-          <p className="lead">Set a few options. Your Squad swipes, marks their times, and SquadSync picks the winner.</p>
-        </div>
-      </section>
+          <p className="lead">Choose a few details, add possible times and activities, then let your Squad vote on the plan.</p>
+        </header>
 
-      <form className="card form-card" onSubmit={submit} noValidate>
-        <fieldset className="group">
-          <legend>Basics</legend>
-          <div className="row2">
-            <Field id="title" label="Event name" error={errors.title}>
-              {(a) => <input {...a} value={title} maxLength={60} placeholder="Friday night out" onChange={(e) => setTitle(e.target.value)} />}
-            </Field>
-            <Field id="squadId" label="Squad" error={errors.squadId}>
-              {(a) => (
-                <select {...a} value={squadId} onChange={(e) => setSquadId(e.target.value)}>
-                  {mySquads.map((s) => <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>)}
-                </select>
-              )}
-            </Field>
-          </div>
-          <Field id="description" label="Details" optional hint="What's the vibe? Budget? Anything people should know?">
-            {(a) => <textarea {...a} rows={3} maxLength={280} value={description} onChange={(e) => setDescription(e.target.value)} />}
-          </Field>
-          <div className="row2">
-            <Field id="area" label="Meet around">
-              {(a) => (
-                <select {...a} value={areaName} onChange={(e) => setAreaName(e.target.value)}>
-                  {AREAS.map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}
-                </select>
-              )}
-            </Field>
-            <Field id="deadline" label="Voting closes" error={errors.deadline}>
-              {(a) => <input {...a} type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />}
-            </Field>
-          </div>
-          <fieldset className="chips">
-            <legend>Who can see it?</legend>
-            <div className="chips__list">
-              <button type="button" className="chip" aria-pressed={visibility === "squad"} onClick={() => setVisibility("squad")}>🔒 Squad only</button>
-              <button type="button" className="chip" aria-pressed={visibility === "public"} onClick={() => setVisibility("public")}>🌍 Public on Explore</button>
+        <form className="card form-card event-create__form" onSubmit={submit} noValidate aria-label="Create a Squad event">
+          <fieldset className="group event-create__group">
+            <legend><span className="event-create__step" aria-hidden="true">01</span> Event basics</legend>
+            <p className="event-create__section-intro">Give everyone the context they need to join in.</p>
+            <div className="row2">
+              <Field id="title" label="Event name" error={errors.title}>
+                {(a) => <input {...a} value={title} maxLength={60} placeholder="Friday night out" onChange={(e) => setTitle(e.target.value)} />}
+              </Field>
+              <Field id="squadId" label="Squad" error={errors.squadId}>
+                {(a) => (
+                  <select {...a} value={squadId} onChange={(e) => setSquadId(e.target.value)}>
+                    {mySquads.map((s) => <option key={s.id} value={s.id}>{s.emoji} {s.name}</option>)}
+                  </select>
+                )}
+              </Field>
             </div>
+            <Field id="description" label="Details" optional hint="What's the vibe? Budget? Anything people should know?">
+              {(a) => <textarea {...a} rows={3} maxLength={280} value={description} onChange={(e) => setDescription(e.target.value)} />}
+            </Field>
+            <div className="row2">
+              <Field id="area" label="Meet around">
+                {(a) => (
+                  <select {...a} value={areaName} onChange={(e) => setAreaName(e.target.value)}>
+                    {AREAS.map((x) => <option key={x.name} value={x.name}>{x.name}</option>)}
+                  </select>
+                )}
+              </Field>
+              <Field id="deadline" label="Voting closes" error={errors.deadline}>
+                {(a) => <input {...a} type="datetime-local" value={deadline} onChange={(e) => setDeadline(e.target.value)} />}
+              </Field>
+            </div>
+            <fieldset className="chips">
+              <legend>Who can see it?</legend>
+              <div className="chips__list">
+                <button type="button" className="chip" aria-pressed={visibility === "squad"} onClick={() => setVisibility("squad")}>🔒 Squad only</button>
+                <button type="button" className="chip" aria-pressed={visibility === "public"} onClick={() => setVisibility("public")}>🌍 Public on Explore</button>
+              </div>
+            </fieldset>
           </fieldset>
-        </fieldset>
 
-        <fieldset className="group" id="slots" tabIndex={-1}>
-          <legend>Time options</legend>
-          <button type="button" className="btn btn--small btn--auto btn--blue" onClick={suggestFromAvailability}>
-            ✨ Suggest times from Squad availability
-          </button>
-          {suggestNote && <p className="field__hint" role="status">{suggestNote}</p>}
-          <ul className="slot-rows">
-            {slots.map((s, i) => (
-              <li key={s.id} className="slot-row">
-                <label className="sr-only" htmlFor={`slot-${s.id}`}>Option {i + 1} start</label>
-                <input id={`slot-${s.id}`} type="datetime-local" value={s.start}
-                  onChange={(e) => setSlots(slots.map((x) => (x.id === s.id ? { ...x, start: e.target.value } : x)))} />
-                <label className="sr-only" htmlFor={`hours-${s.id}`}>Option {i + 1} length</label>
-                <select id={`hours-${s.id}`} value={s.hours}
-                  onChange={(e) => setSlots(slots.map((x) => (x.id === s.id ? { ...x, hours: Number(e.target.value) } : x)))}>
-                  {[1, 2, 3, 4, 6].map((h) => <option key={h} value={h}>{h} h</option>)}
-                </select>
-                <button type="button" className="icon-btn" aria-label={`Remove option ${i + 1}`}
-                  onClick={() => setSlots(slots.filter((x) => x.id !== s.id))}>✕</button>
-              </li>
-            ))}
-          </ul>
-          {slots.length < 6 && (
-            <button type="button" className="btn btn--small btn--auto"
-              onClick={() => setSlots([...slots, { id: uid("r"), start: toLocalInput(nextDate(6, 19)), hours: 3 }])}>
-              + Add time
+          <fieldset className="group event-create__group" id="slots" tabIndex={-1}>
+            <legend><span className="event-create__step" aria-hidden="true">02</span> Time options</legend>
+            <p className="event-create__section-intro">Offer a few dates so everyone has a chance to find a time that works.</p>
+            <button type="button" className="btn btn--small btn--auto btn--blue event-create__suggest" onClick={suggestFromAvailability}>
+              ✨ Suggest times from Squad availability
             </button>
-          )}
-          {errors.slots && <p className="field__error">{errors.slots}</p>}
-        </fieldset>
-
-        <fieldset className="group" id="ideas" tabIndex={-1}>
-          <legend>Starting ideas</legend>
-          <p className="field__hint" style={{ marginTop: -6, marginBottom: 10 }}>Your Squad can add more once voting opens.</p>
-          <div className="chips__list">
-            {INTERESTS.map((c) => (
-              <button key={c} type="button" className="chip" aria-pressed={ideas.includes(c)}
-                onClick={() => setIdeas(ideas.includes(c) ? ideas.filter((x) => x !== c) : [...ideas, c])}>
-                {emojiFor(c)} {c}
+            {suggestNote && <p className="field__hint" role="status">{suggestNote}</p>}
+            <ul className="slot-rows">
+              {slots.map((s, i) => (
+                <li key={s.id} className="slot-row">
+                  <label className="sr-only" htmlFor={`slot-${s.id}`}>Option {i + 1} start</label>
+                  <input id={`slot-${s.id}`} type="datetime-local" value={s.start}
+                    onChange={(e) => setSlots(slots.map((x) => (x.id === s.id ? { ...x, start: e.target.value } : x)))} />
+                  <label className="sr-only" htmlFor={`hours-${s.id}`}>Option {i + 1} length</label>
+                  <select id={`hours-${s.id}`} value={s.hours}
+                    onChange={(e) => setSlots(slots.map((x) => (x.id === s.id ? { ...x, hours: Number(e.target.value) } : x)))}>
+                    {[1, 2, 3, 4, 6].map((h) => <option key={h} value={h}>{h} h</option>)}
+                  </select>
+                  <button type="button" className="icon-btn" aria-label={`Remove option ${i + 1}`}
+                    onClick={() => setSlots(slots.filter((x) => x.id !== s.id))}>✕</button>
+                </li>
+              ))}
+            </ul>
+            {slots.length < 6 && (
+              <button type="button" className="btn btn--small btn--auto"
+                onClick={() => setSlots([...slots, { id: uid("r"), start: toLocalInput(nextDate(6, 19)), hours: 3 }])}>
+                + Add time
               </button>
-            ))}
-          </div>
-          {errors.ideas && <p className="field__error">{errors.ideas}</p>}
-        </fieldset>
+            )}
+            {errors.slots && <p className="field__error">{errors.slots}</p>}
+          </fieldset>
 
-        <button className="btn btn--primary" type="submit">Create & open voting</button>
-      </form>
-    </>
+          <fieldset className="group event-create__group" id="ideas" tabIndex={-1}>
+            <legend><span className="event-create__step" aria-hidden="true">03</span> What should you do?</legend>
+            <p className="event-create__section-intro">Pick at least one activity to kick off the vote. Your Squad can add more later.</p>
+            <div className="chips__list">
+              {INTERESTS.map((c) => (
+                <button key={c} type="button" className="chip" aria-pressed={ideas.includes(c)}
+                  onClick={() => setIdeas(ideas.includes(c) ? ideas.filter((x) => x !== c) : [...ideas, c])}>
+                  {emojiFor(c)} {c}
+                </button>
+              ))}
+            </div>
+            <p className="event-create__selection-count" aria-live="polite">
+            {ideas.length ? `${ideas.length} ${ideas.length === 1 ? "activity" : "activities"} selected` : "No activities selected yet"}
+            </p>
+            {errors.ideas && <p className="field__error">{errors.ideas}</p>}
+          </fieldset>
+
+          <div className="event-create__footer">
+            <p className="event-create__footer-note">
+              {slots.length} {slots.length === 1 ? "time option" : "time options"} · {ideas.length} {ideas.length === 1 ? "activity" : "activities"} selected
+            </p>
+            <button className="btn btn--primary event-create__submit" type="submit">Create event &amp; open voting <span aria-hidden="true">→</span></button>
+          </div>
+        </form>
+    </div>
   );
 }
