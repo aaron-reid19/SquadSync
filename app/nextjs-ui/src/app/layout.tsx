@@ -8,6 +8,7 @@ import "@fontsource/dm-sans/latin-700.css";
 import "leaflet/dist/leaflet.css";
 import "@/styles.css";
 import "@/app.css";
+import "@/ui-polish.css";
 import ClientOnly from "@/components/ClientOnly";
 
 export const metadata: Metadata = {

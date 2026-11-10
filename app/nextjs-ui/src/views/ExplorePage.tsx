@@ -59,6 +59,10 @@ export default function ExplorePage() {
             </button>
           ))}
         </div>
+        <p className="toolbar__summary muted small" role="status" aria-live="polite">
+          Showing {publicEvents.length} public {publicEvents.length === 1 ? "hangout" : "hangouts"} and {venues.length} nearby {venues.length === 1 ? "spot" : "spots"}
+          {filter !== "All" ? ` · ${filter}` : ""}{q ? ` · matching “${query.trim()}”` : ""}.
+        </p>
       </div>
 
       <section className="section" aria-labelledby="pub-h">
