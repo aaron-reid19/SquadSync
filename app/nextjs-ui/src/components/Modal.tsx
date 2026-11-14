@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 
 interface Props {
   open: boolean;
@@ -10,6 +10,7 @@ interface Props {
 /** Native <dialog>: focus trap and Esc-to-close come for free. */
 export default function Modal({ open, title, onClose, children }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId(); // unique per modal, so two modals on one page never share an id
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -18,11 +19,11 @@ export default function Modal({ open, title, onClose, children }: Props) {
   }, [open]);
 
   return (
-    <dialog ref={ref} className="policy modal" aria-labelledby="modal-title" onClose={onClose}>
+    <dialog ref={ref} className="policy modal" aria-labelledby={titleId} onClose={onClose}>
       {open && (
         <>
           <div className="modal__head">
-            <h2 id="modal-title" className="policy__title">{title}</h2>
+            <h2 id={titleId} className="policy__title">{title}</h2>
             <button type="button" className="icon-btn" onClick={onClose} aria-label="Close">✕</button>
           </div>
           <div className="modal__body">{children}</div>
