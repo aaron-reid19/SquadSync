@@ -12,7 +12,7 @@ import "@/ui-polish.css";
 import ClientOnly from "@/components/ClientOnly";
 
 export const metadata: Metadata = {
-  title: "SquadSync",
+  title: { default: "SquadSync", template: "%s · SquadSync" },
   referrer: "strict-origin-when-cross-origin",
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };

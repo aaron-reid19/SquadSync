@@ -1,13 +1,16 @@
-"use client";
+import Link from "next/link";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+export const metadata = { title: "Page not found" };
 
-// Same as the old catch-all route: unknown addresses go to the main page.
+// Tell people the link is wrong instead of silently dropping them on Home.
 export default function NotFound() {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace("/");
-  }, [router]);
-  return null;
+  return (
+    <main className="page" id="main-content">
+      <div className="card form-card">
+        <h1 className="h1">Page not found</h1>
+        <p className="lead">That link doesn&apos;t go anywhere. It may be mistyped, or the page may have moved.</p>
+        <Link href="/" className="btn btn--primary btn--auto">Back to Home</Link>
+      </div>
+    </main>
+  );
 }

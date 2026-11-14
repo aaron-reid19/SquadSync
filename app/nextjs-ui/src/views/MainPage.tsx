@@ -14,7 +14,7 @@ const EMOJIS = ["🎉", "🎳", "🍕", "🎮", "🥾", "🎤", "🎲", "☕", "
 type SquadModal = "create" | "join" | null;
 
 export default function MainPage() {
-  const { db, user, createSquad, joinSquad } = useStore();
+  const { db, user, createSquad, joinSquad, leaveSquad } = useStore();
   const me = useMe();
   const [modal, setModal] = useState<SquadModal>(null);
   const [name, setName] = useState("");
@@ -273,6 +273,16 @@ export default function MainPage() {
                       <span aria-hidden="true">{copied === squad.code ? "✓" : "⧉"}</span>
                     </button>
                   </div>
+
+                  <button
+                    type="button"
+                    className="btn btn--small btn--auto btn--ghost squad-card__leave"
+                    onClick={() => {
+                      if (confirm(`Leave ${squad.name}? You'll need the invite code to rejoin.`)) leaveSquad(squad.id);
+                    }}
+                  >
+                    Leave Squad
+                  </button>
                 </article>
               );
             })}

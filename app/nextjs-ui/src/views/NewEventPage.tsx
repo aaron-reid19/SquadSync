@@ -45,7 +45,9 @@ export default function NewEventPage() {
   const [description, setDescription] = useState("");
   const [areaName, setAreaName] = useState<string>(AREAS[0].name);
   const [visibility, setVisibility] = useState<"squad" | "public">("squad");
-  const [deadline, setDeadline] = useState(() => toLocalInput(new Date(Date.now() + 2 * 86_400_000)));
+  // Two days from now, but never later than an hour before the first default time option.
+  const [deadline, setDeadline] = useState(() =>
+    toLocalInput(new Date(Math.min(Date.now() + 2 * 86_400_000, nextDate(4, 19).getTime() - 3_600_000))));
   const [slots, setSlots] = useState<SlotRow[]>(() => [
     { id: uid("r"), start: toLocalInput(nextDate(4, 19)), hours: 3 },
     { id: uid("r"), start: toLocalInput(nextDate(5, 14)), hours: 3 },
@@ -88,13 +90,19 @@ export default function NewEventPage() {
   function submit(e: FormEvent) {
     e.preventDefault();
     const now = Date.now();
+    // Infinity when there are no valid slots, so the slots error shows instead of a deadline error.
+    const earliestSlot = Math.min(...slots.filter((s) => s.start).map((s) => new Date(s.start).getTime()));
     const found = {
       title: title.trim().length >= 3 ? undefined : "Give your event a name (3+ characters).",
       squadId: squadId ? undefined : "Pick a Squad.",
       slots: slots.length === 0 ? "Add at least one time option."
         : slots.some((s) => !s.start || new Date(s.start).getTime() < now) ? "Every time option needs a future date and time." : undefined,
       ideas: ideas.length ? undefined : "Pick at least one activity to start the vote.",
-      deadline: deadline && new Date(deadline).getTime() > now ? undefined : "The vote should close in the future.",
+      deadline: !deadline || new Date(deadline).getTime() <= now
+        ? "The vote should close in the future."
+        : new Date(deadline).getTime() > earliestSlot
+          ? "Close the vote before the first time option starts."
+          : undefined,
     };
     setErrors(found);
     const first = Object.entries(found).find(([, m]) => m)?.[0];

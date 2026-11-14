@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { SquadEvent } from "../lib/data/types";
 import { useStore } from "../lib/data/store";
 import { emojiFor, fmtRelative, fmtSlot, toneFor } from "../lib/format";
-import { hasFinishedVoting, venueById, winner } from "../lib/results";
+import { hasFinishedVoting, isVotingClosed, venueById, winner } from "../lib/results";
 import { AvatarStack } from "./Avatar";
 
 export default function EventCard({ event, action }: { event: SquadEvent; action?: React.ReactNode }) {
@@ -12,7 +12,8 @@ export default function EventCard({ event, action }: { event: SquadEvent; action
   const activity = isFinal ? event.suggestions.find((s) => s.id === event.final!.suggestionId) : winner(event).activity;
   const slot = isFinal ? event.slots.find((t) => t.id === event.final!.slotId) : undefined;
   const venue = isFinal ? venueById(event.final!.venueId) : undefined;
-  const needsVote = !isFinal && me && squad?.memberIds.includes(me.id) && !hasFinishedVoting(event, me.id);
+  const closed = !isFinal && isVotingClosed(event);
+  const needsVote = !isFinal && !closed && me &&squad?.memberIds.includes(me.id) && !hasFinishedVoting(event, me.id);
 
   return (
     <article className="card event-card">
@@ -22,7 +23,9 @@ export default function EventCard({ event, action }: { event: SquadEvent; action
       <div className="event-card__body">
         <div className="event-card__meta">
           <span className="pill">{squad?.emoji} {squad?.name}</span>
-          {isFinal ? <span className="pill pill--green">Locked in</span> : <span className="pill pill--yellow">Voting · ends {fmtRelative(event.voteDeadline)}</span>}
+          {isFinal ? <span className="pill pill--green">Locked in</span>
+            : closed ? <span className="pill pill--red">Voting closed · waiting on organizer</span>
+            : <span className="pill pill--yellow">Voting · ends {fmtRelative(event.voteDeadline)}</span>}
           {event.visibility === "public" && <span className="pill">Public</span>}
         </div>
         <h3 className="event-card__title">
