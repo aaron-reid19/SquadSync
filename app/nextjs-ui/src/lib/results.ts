@@ -43,6 +43,11 @@ export function venuesNear(area: Area, category: string): NearbyVenue[] {
 
 export const venueById = (id?: string) => VENUES.find((v) => v.id === id);
 
+/** Voting is still open on paper, but its deadline has passed. */
+export function isVotingClosed(event: SquadEvent, now = Date.now()) {
+  return event.status === "voting" && new Date(event.voteDeadline).getTime() <= now;
+}
+
 /** Has this user swiped on every suggestion yet? */
 export function hasFinishedVoting(event: SquadEvent, userId: string) {
   return event.suggestions.every((s) => s.likes.includes(userId) || s.passes.includes(userId));

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { useEffect } from "react";
 import { Avatar } from "../components/Avatar";
 import FinalPlan from "../components/FinalPlan";
 import { useMe, useStore } from "../lib/data/store";
 import { emojiFor, fmtRelative, fmtSlot, fullName, toneFor } from "../lib/format";
-import { hasFinishedVoting, rankSlots, rankSuggestions } from "../lib/results";
+import { hasFinishedVoting, isVotingClosed, rankSlots, rankSuggestions } from "../lib/results";
 
 export default function EventDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,11 @@ export default function EventDetailsPage() {
   const me = useMe();
   const event = db.events.find((e) => e.id === id);
   const squad = db.squads.find((s) => s.id === event?.squadId);
+  const eventTitle = event?.title;
+
+  useEffect(() => {
+    document.title = eventTitle ? `${eventTitle} · SquadSync` : "Event · SquadSync";
+  }, [eventTitle]);
 
   if (!event || !squad) {
     return (
@@ -56,7 +62,9 @@ export default function EventDetailsPage() {
         <div className="event-hero__body">
           <div className="event-card__meta">
             <span className="pill">{squad.emoji} {squad.name}</span>
-            {isFinal ? <span className="pill pill--green">Locked in</span> : <span className="pill pill--yellow">Voting ends {fmtRelative(event.voteDeadline)}</span>}
+            {isFinal ? <span className="pill pill--green">Locked in</span>
+              : isVotingClosed(event) ? <span className="pill pill--red">Voting closed · waiting on organizer</span>
+              : <span className="pill pill--yellow">Voting ends {fmtRelative(event.voteDeadline)}</span>}
             <span className="pill">{event.visibility === "public" ? "🌍 Public" : "🔒 Squad only"}</span>
           </div>
           <h1 className="h1">{event.title}</h1>
