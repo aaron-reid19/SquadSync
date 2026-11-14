@@ -26,7 +26,7 @@ export default function ExplorePage() {
     if (e.visibility !== "public" || mySquadIds.has(e.squadId)) return false;
     const cats = e.suggestions.map((s) => s.category);
     const text = `${e.title} ${e.description} ${cats.join(" ")}`.toLowerCase();
-    return (!q || text.includes(q)) && (filter === "All" || filter === "For you" || cats.includes(filter));
+    return (!q || text.includes(q)) && (filter === "All" || cats.some(matchesCategory));
   });
 
   const center = AREAS[0];
