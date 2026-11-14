@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import ChatPanel from "../components/ChatPanel";
 import Tabs from "../components/Tabs";
 import VotingPanel from "../components/VotingPanel";
@@ -18,6 +19,11 @@ export default function EventChatPage() {
   const tab: Tab = params.get("tab") === "vote" ? "vote" : "chat";
   const event = db.events.find((e) => e.id === id);
   const squad = db.squads.find((s) => s.id === event?.squadId);
+  const eventTitle = event?.title;
+
+  useEffect(() => {
+    document.title = eventTitle ? `${eventTitle} chat · SquadSync` : "Event · SquadSync";
+  }, [eventTitle]);
 
   if (!event || !squad) {
     return (
