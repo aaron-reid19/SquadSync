@@ -4,6 +4,36 @@ Each child directory is an independently deployable service with its own package
 
 Each service is intended to run as its own Docker image and, eventually, as its own Kubernetes workload on the home server. Every scaffold exposes `/health` and `/ready` for Kubernetes readiness and liveness probes.
 
+## Source layout
+
+Database-backed services use the same request boundary:
+
+```text
+route → controller → service/use case → repository → database
+```
+
+Their source folders are organized as:
+
+```text
+src/
+├── routes/          # HTTP route registration and request wiring
+├── controllers/     # request/response handlers
+├── services/        # business rules and use cases
+├── repositories/    # SQL and database access
+├── schemas/         # request and response validation
+└── middleware/      # authentication and cross-cutting request behavior
+```
+
+The current service-specific scaffold is:
+
+- `auth-service`: routes, controllers, services, repositories, schemas, middleware
+- `identity-service`: routes, controllers, services, schemas; it remains stateless and has no repository layer
+- `squad-service`: routes, controllers, services, repositories, schemas
+- `event-service`: routes, controllers, services, repositories, schemas
+- `chat-service`: routes, controllers, services, repositories, schemas, websocket
+- `notification-worker`: routes, services, transports, schemas; it sends mail and has no database repository yet
+- `api-gateway`: routes, middleware, and proxy; it does not contain domain CRUD or database access
+
 Current services:
 
 - `api-gateway`: the single HTTP and WebSocket entry point exposed to the UI; routes requests to internal services.
