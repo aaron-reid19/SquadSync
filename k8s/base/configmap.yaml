@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: squadsync-config
+data:
+  NODE_ENV: production
+  DATABASE_SSL: "false"
+  DB_POOL_MAX: "10"
+  API_INTERNAL_URL: http://api-gateway:4000
+  AUTH_SERVICE_URL: http://auth-service:4001
+  IDENTITY_SERVICE_URL: http://identity-service:4100
+  SQUAD_SERVICE_URL: http://squad-service:4101
+  EVENT_SERVICE_URL: http://event-service:4102
+  CHAT_SERVICE_URL: http://chat-service:4103
+  IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
+  IDENTITY_ISSUER: http://identity-service:4100
+  IDENTITY_AUDIENCE: squadsync-api
+  IDENTITY_KEY_ID: home-server-identity-key
+  IDENTITY_COOKIE_NAME: __Host-squadsync-access
+  ACCESS_TOKEN_TTL_SECONDS: "900"

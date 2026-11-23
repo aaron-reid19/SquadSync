@@ -1,0 +1,23 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: pg-main
+spec:
+  imageName: ghcr.io/cloudnative-pg/postgresql:16.4
+  instances: 1
+  storage:
+    size: 50Gi
+    storageClass: microk8s-hostpath
+  bootstrap:
+    initdb:
+      database: squadsync
+      owner: squadsync
+      secret:
+        name: pg-main-app
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1
+      memory: 1Gi
