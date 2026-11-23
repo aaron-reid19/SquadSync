@@ -34,6 +34,8 @@ The current service-specific scaffold is:
 - `notification-worker`: routes, services, transports, schemas; it sends mail and has no database repository yet
 - `api-gateway`: routes, middleware, and proxy; it does not contain domain CRUD or database access
 
+Database migrations are intentionally centralized in `database/postgres/migrations/`. A service `schemas/` folder means API/message validation, not PostgreSQL table creation. Repositories are the only layer that should issue service-database queries.
+
 Current services:
 
 - `api-gateway`: the single HTTP and WebSocket entry point exposed to the UI; routes requests to internal services.

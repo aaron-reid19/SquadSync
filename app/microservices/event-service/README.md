@@ -2,6 +2,16 @@
 
 The event service owns event planning and the `event_db` database.
 
+## Folder map
+
+- `src/routes/` — registers event, slot, RSVP, voting, and finalization endpoints.
+- `src/controllers/` — translates HTTP requests into event use cases and responses.
+- `src/services/` — enforces event lifecycle, scheduling, voting, RSVP, and final-plan rules.
+- `src/repositories/` — contains all `event_db` queries and transaction boundaries.
+- `src/schemas/` — validates event payloads, coordinates, time slots, deadlines, votes, and responses; it does not define PostgreSQL tables.
+- `src/auth.ts` — verifies Identity JWTs/JWKS and provides the authenticated identity.
+- `src/index.ts` — composes Fastify and starts the service.
+
 Expected implementation:
 
 - Authenticate requests and verify squad membership through service boundaries.
@@ -10,4 +20,4 @@ Expected implementation:
 - Put scheduling and voting invariants in services, not controllers or SQL-only conventions.
 - Emit notification requests only after successful domain transactions.
 
-The current endpoints are authenticated scaffolds and return `501` until this layer is implemented.
+The current endpoints are authenticated scaffolds and return `501` until this layer is implemented. Database creation and migrations live centrally under `database/postgres/migrations/`.
