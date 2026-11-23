@@ -1,15 +1,26 @@
 # PostgreSQL
 
-PostgreSQL is hosted directly on the home server and is not created or persisted by the application containers or Kubernetes workloads.
+PostgreSQL is managed by CloudNativePG in the Kubernetes cluster. The single-node
+`pg-main` cluster uses the server's hostpath storage and owns four service databases:
+`auth_db`, `squad_db`, `event_db`, and `chat_db`.
 
-Set `DATABASE_URL` for the microservices, then apply migrations from the repository root:
+Each database has its own role, connection URL, and migration history. Auth owns
+users, profiles, sessions, and password resets. Squad, event, and chat own their
+domain tables. Cross-service IDs are application-level references rather than
+cross-database foreign keys.
+
+The migration image runs the service-owned SQL migrations:
 
 ```bash
-npm --prefix app/microservices/auth-service run migrate
+docker build -f database/postgres/migrations/Dockerfile .
 ```
 
-The migration files are versioned in `database/postgres/migrations/`. Database credentials and data stay outside Git.
+The Kubernetes migration Jobs use `MIGRATION_SERVICE` and the corresponding
+`*_DATABASE_URL` Secret value. They are Argo CD sync hooks and are rerun when a
+new sync occurs. Migration files are versioned under
+`database/postgres/migrations/`; database credentials and data stay outside Git.
 
-In the Kubernetes deployment, services receive the connection through `DATABASE_URL` from a server-managed Secret. Migrations should run as an explicit release step or a Kubernetes Job before application workloads are marked ready.
+For local development, the existing auth-service migration command remains
+available and uses the auth migration source.
 
 PostgreSQL is not exposed through the public Cloudflare hostname. Cloudflare routes web traffic to the Kubernetes ingress; database traffic stays on the home-server network.

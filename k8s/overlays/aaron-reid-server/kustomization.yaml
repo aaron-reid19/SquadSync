@@ -21,3 +21,5 @@ images:
     newTag: latest
   - name: ghcr.io/aaron-reid19/squadsync/notification-worker
     newTag: latest
+  - name: ghcr.io/aaron-reid19/squadsync/postgres-migrations
+    newTag: latest

@@ -7,6 +7,8 @@ resources:
   - namespace.yaml
   - configmap.yaml
   - postgres.yaml
+  - database-resources.yaml
+  - migration-jobs.yaml
   - deployments.yaml
   - services.yaml
   - ingress.yaml

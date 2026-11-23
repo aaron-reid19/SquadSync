@@ -1,0 +1,102 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: auth-db-migration
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: ghcr.io/aaron-reid19/squadsync/postgres-migrations:latest
+          env:
+            - name: MIGRATION_SERVICE
+              value: auth
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: AUTH_DATABASE_URL
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: squad-db-migration
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: ghcr.io/aaron-reid19/squadsync/postgres-migrations:latest
+          env:
+            - name: MIGRATION_SERVICE
+              value: squad
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: SQUAD_DATABASE_URL
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: event-db-migration
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: ghcr.io/aaron-reid19/squadsync/postgres-migrations:latest
+          env:
+            - name: MIGRATION_SERVICE
+              value: event
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: EVENT_DATABASE_URL
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chat-db-migration
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: migration
+          image: ghcr.io/aaron-reid19/squadsync/postgres-migrations:latest
+          env:
+            - name: MIGRATION_SERVICE
+              value: chat
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: CHAT_DATABASE_URL

@@ -85,6 +85,9 @@ jobs:
           docker build -f app/microservices/chat-service/Dockerfile -t squadsync-chat-service:ci .
           docker build -f app/microservices/notification-worker/Dockerfile -t squadsync-notification-worker:ci .
 
+      - name: Build PostgreSQL migration image
+        run: docker build -f database/postgres/migrations/Dockerfile -t squadsync-postgres-migrations:ci .
+
   publish:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: validate
@@ -111,6 +114,8 @@ jobs:
             dockerfile: app/microservices/chat-service/Dockerfile
           - name: notification-worker
             dockerfile: app/microservices/notification-worker/Dockerfile
+          - name: postgres-migrations
+            dockerfile: database/postgres/migrations/Dockerfile
     steps:
       - uses: actions/checkout@v4
 

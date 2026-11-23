@@ -1,0 +1,122 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: auth-db-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  cluster:
+    name: pg-main
+  name: auth_app
+  login: true
+  passwordSecret:
+    name: auth-db-app
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: squad-db-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  cluster:
+    name: pg-main
+  name: squad_app
+  login: true
+  passwordSecret:
+    name: squad-db-app
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: event-db-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  cluster:
+    name: pg-main
+  name: event_app
+  login: true
+  passwordSecret:
+    name: event-db-app
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: DatabaseRole
+metadata:
+  name: chat-db-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  cluster:
+    name: pg-main
+  name: chat_app
+  login: true
+  passwordSecret:
+    name: chat-db-app
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: auth-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: auth_db
+  owner: auth_app
+  cluster:
+    name: pg-main
+  extensions:
+    - name: pgcrypto
+      ensure: present
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: squad-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: squad_db
+  owner: squad_app
+  cluster:
+    name: pg-main
+  extensions:
+    - name: pgcrypto
+      ensure: present
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: event-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: event_db
+  owner: event_app
+  cluster:
+    name: pg-main
+  extensions:
+    - name: pgcrypto
+      ensure: present
+
+---
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: chat-db
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  name: chat_db
+  owner: chat_app
+  cluster:
+    name: pg-main
+  extensions:
+    - name: pgcrypto
+      ensure: present

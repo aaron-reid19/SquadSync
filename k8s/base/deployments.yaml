@@ -140,6 +140,11 @@ spec:
           env:
             - name: PORT
               value: "4001"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: AUTH_DATABASE_URL
           readinessProbe:
             httpGet:
               path: /health
@@ -254,6 +259,11 @@ spec:
           env:
             - name: PORT
               value: "4101"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: SQUAD_DATABASE_URL
           readinessProbe:
             httpGet:
               path: /ready
@@ -311,6 +321,11 @@ spec:
           env:
             - name: PORT
               value: "4102"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: EVENT_DATABASE_URL
           readinessProbe:
             httpGet:
               path: /ready
@@ -368,6 +383,11 @@ spec:
           env:
             - name: PORT
               value: "4103"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: squadsync-database-urls
+                  key: CHAT_DATABASE_URL
           readinessProbe:
             httpGet:
               path: /ready
