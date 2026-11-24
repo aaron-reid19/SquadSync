@@ -131,6 +131,7 @@ jobs:
           images: ghcr.io/${{ github.repository }}/${{ matrix.name }}
           tags: |
             type=sha
+            type=raw,value=${{ github.sha }}
             type=raw,value=latest
 
       - uses: docker/build-push-action@v6
@@ -140,3 +141,35 @@ jobs:
           push: true
           tags: ${{ steps.metadata.outputs.tags }}
           labels: ${{ steps.metadata.outputs.labels }}
+
+  promote-qa:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Pin QA images to this commit
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          sed -i -E "s/newTag: .*/newTag: ${IMAGE_TAG}/" \
+            k8s/overlays/aaron-reid-server/kustomization.yaml
+
+      - name: Commit QA deployment update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet -- k8s/overlays/aaron-reid-server/kustomization.yaml; then
+            echo "QA is already pinned to this image tag"
+            exit 0
+          fi
+
+          git add k8s/overlays/aaron-reid-server/kustomization.yaml
+          git commit -m "chore(deploy): promote ${GITHUB_SHA} to QA [skip ci]"
+          git push origin HEAD:main
