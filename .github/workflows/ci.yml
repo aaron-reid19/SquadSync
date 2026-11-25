@@ -15,36 +15,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.1.3
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            app/nextjs-ui/package-lock.json
-            app/microservices/auth-service/package-lock.json
-            app/microservices/api-gateway/package-lock.json
-            app/microservices/identity-service/package-lock.json
-            app/microservices/squad-service/package-lock.json
-            app/microservices/event-service/package-lock.json
-            app/microservices/chat-service/package-lock.json
-            app/microservices/notification-worker/package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
 
-      - name: Install UI dependencies
-        run: npm ci --prefix app/nextjs-ui
-
-      - name: Install auth service dependencies
-        run: npm ci --prefix app/microservices/auth-service
-
-      - name: Install API gateway dependencies
-        run: npm ci --prefix app/microservices/api-gateway
-
-      - name: Install scaffold service dependencies
-        run: |
-          npm ci --prefix app/microservices/identity-service
-          npm ci --prefix app/microservices/squad-service
-          npm ci --prefix app/microservices/event-service
-          npm ci --prefix app/microservices/chat-service
-          npm ci --prefix app/microservices/notification-worker
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run automated tests when available
         run: |
@@ -59,14 +41,14 @@ jobs:
             app/microservices/chat-service \
             app/microservices/notification-worker; do
             echo "Running tests for ${package} when configured"
-            npm test --if-present --prefix "${package}"
+            pnpm --dir "${package}" run --if-present test
           done
 
       - name: Type-check packages
-        run: npm run typecheck
+        run: pnpm run typecheck
 
       - name: Build UI
-        run: npm run build
+        run: pnpm run build
 
       - name: Build UI image
         run: docker build -f app/nextjs-ui/Dockerfile -t squadsync-nextjs-ui:ci .

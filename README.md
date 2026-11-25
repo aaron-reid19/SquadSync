@@ -40,14 +40,19 @@ The recommendation service will consume approved event data through service APIs
 
 ## Local development
 
-Prerequisites: Node.js 22+ and a reachable PostgreSQL instance.
+Prerequisites: Node.js 22+, pnpm 11+, and a reachable PostgreSQL instance.
 
 ```bash
-npm run install:all
+pnpm install
 cp app/microservices/auth-service/.env.example app/microservices/auth-service/.env
-npm --prefix app/microservices/auth-service run migrate
-npm run dev:all
+pnpm --filter squadsync-auth-service migrate
+pnpm run dev:all
 ```
+
+The workspace is declared in `pnpm-workspace.yaml`. The root
+`packageManager` field pins the expected pnpm version so every contributor can
+install the same workspace dependencies from the repository root. The existing
+npm lockfiles and npm-based Dockerfiles remain available during the migration.
 
 The UI runs at <http://localhost:3000>, the API gateway at <http://localhost:4000>, and the auth service at <http://localhost:4001>.
 
@@ -105,7 +110,7 @@ Migration files live in `database/postgres/migrations/`. Never commit database c
 
 The intended pipeline is:
 
-1. Install the UI and service lockfiles with `npm ci`.
+1. Install the workspace dependencies with pnpm.
 2. Type-check both packages.
 3. Build the Next.js application.
 4. Build the UI, gateway, authentication, identity, squad, event, chat, and notification images. Add the recommendation-service image after that service is implemented.

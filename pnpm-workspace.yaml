@@ -1,0 +1,10 @@
+packages:
+  - app/nextjs-ui
+  - app/microservices/*
+
+onlyBuiltDependencies:
+  - argon2
+  - esbuild
+allowBuilds:
+  argon2: true
+  esbuild: true
