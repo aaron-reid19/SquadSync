@@ -54,6 +54,10 @@ The workspace is declared in `pnpm-workspace.yaml`. The root
 install the same workspace dependencies from the repository root. The existing
 npm lockfiles and npm-based Dockerfiles remain available during the migration.
 
+`pnpm run dev:all` starts every application workspace together: the UI, API
+gateway, auth, identity, squad, event, chat, and notification services. Use the
+root `dev:*` scripts when you only need one service.
+
 The UI runs at <http://localhost:3000>, the API gateway at <http://localhost:4000>, and the auth service at <http://localhost:4001>.
 
 The demo UI login is `admin / password`. Its current squads, events, voting, and chat data are stored in browser localStorage until those APIs are implemented.

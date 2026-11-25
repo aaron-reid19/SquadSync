@@ -7,7 +7,7 @@
     "dev": "next dev -p 3000",
     "dev:gateway": "npm --prefix ../microservices/api-gateway run dev",
     "dev:api": "npm --prefix ../microservices/auth-service run dev",
-    "dev:all": "concurrently -n web,gateway,auth -c blue,magenta,green \"npm run dev\" \"npm run dev:gateway\" \"npm run dev:api\"",
+    "dev:all": "pnpm --dir ../.. run dev:all",
     "build": "next build",
     "start": "next start -p 3000",
     "typecheck": "tsc --noEmit",
