@@ -9,6 +9,14 @@ function getTransport() {
   return transport;
 }
 
+/** SMTP readiness: "not_configured" without SMTP_URL, otherwise verifies the connection. */
+export async function verifyMailTransport(): Promise<"ok" | "not_configured"> {
+  const t = getTransport();
+  if (!t) return "not_configured";
+  await t.verify();
+  return "ok";
+}
+
 /**
  * Sends an email. With no SMTP_URL in development it prints the message instead.
  * In production it never prints: the body can hold a password-reset token.

@@ -18,6 +18,9 @@ const chatServiceUrl = process.env.CHAT_SERVICE_URL ?? "http://localhost:4103";
 app.disable("x-powered-by");
 app.use(requestLogging(log));
 app.get("/health", (_req, res) => res.json({ ok: true, service: "api-gateway" }));
+// The gateway has no dependencies of its own. Each upstream has its own readiness
+// probe, so checking them here would only cascade one service's outage into all routes.
+app.get("/ready", (_req, res) => res.json({ ok: true, service: "api-gateway" }));
 
 function copyRequestHeaders(req: Request) {
   const headers = new Headers();

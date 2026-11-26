@@ -18,9 +18,13 @@ targets=(
   auth-service:config.ts
   auth-service:requestId.ts
   auth-service:expressObservability.ts
+  auth-service:readiness.ts
 )
 for service in identity-service squad-service event-service chat-service notification-worker; do
   targets+=("${service}:config.ts" "${service}:requestId.ts" "${service}:fastifyObservability.ts")
+done
+for service in squad-service event-service chat-service; do
+  targets+=("${service}:readiness.ts" "${service}:db.ts")
 done
 
 status=0

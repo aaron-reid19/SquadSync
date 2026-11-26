@@ -46,3 +46,32 @@ Express).
 
 The helpers live in `app/microservices/_shared/` and are copied into each
 service by `scripts/sync-shared.sh`.
+
+## Health and readiness
+
+| Endpoint | Meaning | Used by |
+| --- | --- | --- |
+| `/health` | The process is running. Never checks dependencies. | Kubernetes liveness probe (restart on failure) |
+| `/ready` | Required dependencies answer. `503` when a critical check fails. | Kubernetes readiness probe (traffic), Compose `healthcheck` / `depends_on` |
+
+What each `/ready` checks:
+
+| Service | Critical | Reported only |
+| --- | --- | --- |
+| api-gateway | — (no dependencies of its own) | — |
+| auth-service | PostgreSQL | SMTP (`ok`, `failed`, or `not_configured`) |
+| identity-service | signing keys loaded | — |
+| squad / event / chat | PostgreSQL, identity JWKS has keys | — |
+| notification-worker | — | SMTP configured |
+
+The response body lists each check as `ok`, `failed`, or `not_configured`.
+Failure reasons are logged at warn level and never returned to the caller.
+Successful JWKS checks are cached for 30 seconds and SMTP checks for 60 seconds,
+so probes do not hammer those dependencies. Each check times out after
+`READINESS_TIMEOUT_MS` (default 2000 ms).
+
+Kubernetes stops routing to a pod that is not ready and restarts a pod whose
+liveness probe fails. Docker Compose does not restart unhealthy containers on
+its own; every service uses `restart: unless-stopped` so crashed processes come
+back, and `depends_on: condition: service_healthy` holds dependants until
+`/ready` passes.

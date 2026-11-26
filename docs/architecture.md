@@ -41,7 +41,7 @@ Git repository
 
 Kubernetes will run the application workloads while PostgreSQL remains outside the cluster and outside the application containers. Services will receive the database connection through `DATABASE_URL` and server-managed secrets.
 
-Each workload will define readiness and liveness probes. Readiness controls whether a pod receives traffic; liveness allows Kubernetes to restart a stuck process. The gateway and all service scaffolds expose `/health` and `/ready` endpoints that can be used by their probes.
+Each workload will define readiness and liveness probes. Readiness controls whether a pod receives traffic; liveness allows Kubernetes to restart a stuck process. The gateway and every service expose `/health` (liveness) and `/ready` (dependency readiness) endpoints; see [observability.md](observability.md).
 
 Argo CD will watch the Kubernetes manifests in Git, report synchronization and resource health, and reconcile the home-server cluster to the desired state. CI will build and publish immutable image tags; approved image changes will be represented in the Git-managed Kubernetes manifests.
 
