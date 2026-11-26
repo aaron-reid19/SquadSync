@@ -13,13 +13,15 @@ check=false
 
 # service:file pairs
 targets=(
+  api-gateway:requestId.ts
+  api-gateway:expressObservability.ts
   auth-service:config.ts
-  identity-service:config.ts
-  squad-service:config.ts
-  event-service:config.ts
-  chat-service:config.ts
-  notification-worker:config.ts
+  auth-service:requestId.ts
+  auth-service:expressObservability.ts
 )
+for service in identity-service squad-service event-service chat-service notification-worker; do
+  targets+=("${service}:config.ts" "${service}:requestId.ts" "${service}:fastifyObservability.ts")
+done
 
 status=0
 for target in "${targets[@]}"; do

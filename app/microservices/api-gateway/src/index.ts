@@ -3,7 +3,10 @@ import { createServer } from "node:http";
 import { Readable } from "node:stream";
 import express, { type Request, type Response } from "express";
 import httpProxy from "http-proxy";
+import { createLogger, errorHandler, requestIdOf, requestLogging } from "./shared/expressObservability.js";
+import { REQUEST_ID_HEADER, requestIdFrom } from "./shared/requestId.js";
 
+const log = createLogger("api-gateway");
 const app = express();
 const port = Number(process.env.PORT) || 4000;
 const authServiceUrl = process.env.AUTH_SERVICE_URL ?? "http://localhost:4001";
@@ -13,6 +16,7 @@ const eventServiceUrl = process.env.EVENT_SERVICE_URL ?? "http://localhost:4102"
 const chatServiceUrl = process.env.CHAT_SERVICE_URL ?? "http://localhost:4103";
 
 app.disable("x-powered-by");
+app.use(requestLogging(log));
 app.get("/health", (_req, res) => res.json({ ok: true, service: "api-gateway" }));
 
 function copyRequestHeaders(req: Request) {
@@ -58,8 +62,11 @@ function proxyTo(serviceUrl: string) {
       }
       Readable.fromWeb(response.body as any).pipe(res);
     } catch (error) {
-      console.error("Service proxy failed:", error instanceof Error ? error.message : "unknown error");
-      res.status(502).json({ error: "Upstream service unavailable" });
+      log.error(
+        { reqId: requestIdOf(res), upstream: serviceUrl, err: error instanceof Error ? error.message : "unknown error" },
+        "service proxy failed",
+      );
+      if (!res.headersSent) res.status(502).json({ error: "Upstream service unavailable", requestId: requestIdOf(res) });
     }
   };
 }
@@ -70,17 +77,19 @@ app.use("/api/identity", proxyTo(identityServiceUrl));
 app.use("/api/squads", proxyTo(squadServiceUrl));
 app.use("/api/events", proxyTo(eventServiceUrl));
 app.use("/api/chat", proxyTo(chatServiceUrl));
-app.use("/api", (_req, res) => res.status(404).json({ error: "API route not found" }));
+app.use("/api", (_req, res) => res.status(404).json({ error: "API route not found", requestId: requestIdOf(res) }));
+app.use(errorHandler(log));
 
 const server = createServer(app);
 const websocketProxy = httpProxy.createProxyServer({ ws: true, changeOrigin: true });
-websocketProxy.on("error", (error, _request, socket) => {
-  console.error("Chat WebSocket proxy failed:", error.message);
+websocketProxy.on("error", (error, request, socket) => {
+  log.error({ reqId: request.headers[REQUEST_ID_HEADER], err: error.message }, "chat websocket proxy failed");
   if (socket && "destroy" in socket) socket.destroy();
 });
 
 server.on("upgrade", (request, socket, head) => {
   if (request.url?.startsWith("/api/chat/ws")) {
+    request.headers[REQUEST_ID_HEADER] = requestIdFrom(request.headers[REQUEST_ID_HEADER]);
     websocketProxy.ws(request, socket, head, { target: chatServiceUrl });
     return;
   }
@@ -88,5 +97,5 @@ server.on("upgrade", (request, socket, head) => {
 });
 
 server.listen(port, "0.0.0.0", () => {
-  console.log(`API gateway running on http://localhost:${port}`);
+  log.info({ port }, "api gateway listening");
 });

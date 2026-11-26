@@ -1,5 +1,6 @@
 import "dotenv/config";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
+import { fastifyOptions, registerObservability } from "./shared/fastifyObservability.js";
 import cookie from "@fastify/cookie";
 import {
   exportJWK,
@@ -18,7 +19,8 @@ assertRequiredConfig("identity-service", [
   "IDENTITY_INTERNAL_TOKEN",
 ]);
 
-const app = Fastify({ logger: true });
+const app = Fastify(fastifyOptions("identity-service"));
+registerObservability(app);
 const port = Number(process.env.PORT) || 4100;
 const issuer = process.env.IDENTITY_ISSUER ?? `http://localhost:${port}`;
 const audience = process.env.IDENTITY_AUDIENCE ?? "squadsync-api";

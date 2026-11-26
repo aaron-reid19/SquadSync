@@ -7,12 +7,15 @@ import { checkDatabase } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
 import { assertRequiredConfig } from "./shared/config";
+import { createLogger, errorHandler, requestLogging } from "./shared/expressObservability";
 
 assertRequiredConfig("auth-service", ["DATABASE_URL", "APP_URL"]);
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("GOOGLE_CLIENT_ID is not set: Google sign-in will fail.");
 
+const log = createLogger("auth-service");
 const app = express();
 app.disable("x-powered-by");
+app.use(requestLogging(log));
 // app.set("trust proxy", 1); // enable when deployed behind a proxy so rate limits see real IPs
 app.use(
   helmet({
@@ -39,10 +42,7 @@ app.use("/api/auth", signupRouter);
 
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 // Never leak stack traces or error details to the client.
-app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err instanceof Error ? err.message : "Unknown error");
-  res.status(500).json({ error: "Something went wrong" });
-});
+app.use(errorHandler(log));
 
 const port = Number(process.env.PORT) || 4000;
-app.listen(port, "0.0.0.0", () => console.log(`Auth service running on http://localhost:${port}`));
+app.listen(port, "0.0.0.0", () => log.info({ port }, "auth service listening"));
