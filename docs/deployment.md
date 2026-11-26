@@ -6,13 +6,22 @@ SquadSync has two deployment phases. Docker Compose is the current deployment pa
 
 1. Build and publish the `nextjs-ui`, `api-gateway`, `auth-service`, `identity-service`, `squad-service`, `event-service`, `chat-service`, and `notification-worker` images from CI.
 2. Copy `deploy/.env.example` to `deploy/.env` on the home server and fill in the PostgreSQL, identity, and mail settings.
-3. Apply the auth database migration from a machine that can reach PostgreSQL:
+3. Apply database migrations for each service database from a machine that can reach PostgreSQL
+   (see [database/postgres/README.md](../database/postgres/README.md)):
 
    ```bash
-   npm --prefix app/microservices/auth-service run migrate
+   docker build -f database/postgres/migrations/Dockerfile -t squadsync-migrations .
+   docker run --rm -e MIGRATION_SERVICE=auth  -e DATABASE_URL="$AUTH_DATABASE_URL"  squadsync-migrations
+   docker run --rm -e MIGRATION_SERVICE=squad -e DATABASE_URL="$SQUAD_DATABASE_URL" squadsync-migrations
+   docker run --rm -e MIGRATION_SERVICE=event -e DATABASE_URL="$EVENT_DATABASE_URL" squadsync-migrations
+   docker run --rm -e MIGRATION_SERVICE=chat  -e DATABASE_URL="$CHAT_DATABASE_URL"  squadsync-migrations
    ```
 
-   The auth service will remain unready until `DATABASE_URL` is set and this migration has completed.
+   Each service needs its own database, as in Kubernetes. Pointing all four at one
+   database makes their version numbers collide (every service has a `001_…`), and
+   the runner stops with a checksum error rather than skipping a migration.
+
+   The auth service will remain unready until `DATABASE_URL` is set and its migration has completed.
 
 4. Start the application stack:
 
@@ -52,12 +61,7 @@ Cloudflare Tunnel is preferred for this home-server deployment because the tunne
 
 ## Database migrations in Kubernetes
 
-Migrations should run as an explicit release step or a Kubernetes Job with network access to the home-server PostgreSQL instance. They should complete successfully before the application rollout is considered ready.
-
-The migration command is:
-
-```bash
-npm --prefix app/microservices/auth-service run migrate
-```
-
-The migration files are versioned in `database/postgres/migrations/`.
+Migrations run as Argo CD Sync-hook Jobs (sync wave 10) before the application
+Deployments (sync wave 20). A failed migration fails the sync and the previous
+pods keep serving. Rules for writing migrations and the rollback runbook are in
+[database/postgres/README.md](../database/postgres/README.md).
