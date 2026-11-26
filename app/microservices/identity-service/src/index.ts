@@ -17,7 +17,7 @@ const audience = process.env.IDENTITY_AUDIENCE ?? "squadsync-api";
 const keyId = process.env.IDENTITY_KEY_ID ?? "dev-identity-key";
 const cookieName = process.env.IDENTITY_COOKIE_NAME ??
   (process.env.NODE_ENV === "production" ? "__Host-squadsync-access" : "squadsync-access");
-const accessTokenTtl = Number(process.env.ACCESS_TOKEN_TTL_SECONDS) || 900;
+const accessTokenTtl = Number(process.env.ACCESS_TOKEN_TTL_SECONDS) || 86400;
 
 type SigningKey = Parameters<SignJWT["sign"]>[0];
 let privateKey: SigningKey;
