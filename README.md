@@ -28,7 +28,7 @@ k8s/                            # Planned Kubernetes manifests
 argocd/                          # Planned Argo CD Application definitions
 ```
 
-The identity, squad, event, chat, and notification services are deployable Fastify services. The squad service persists Squads and memberships in PostgreSQL (see `app/microservices/squad-service/README.md`); the event, chat, and notification endpoints are still scaffolds that return `501` until their contracts are built. The current UI still uses its seeded browser demo store for event, chat, and notification features.
+The identity, squad, event, chat, and notification services now have deployable Fastify scaffolds. Their domain persistence and business workflows are intentionally not implemented yet; scaffold endpoints return `501` until their contracts are built. Account signup, login, sessions, and password reset now use the auth service; the UI still uses its seeded browser demo store for squad, event, chat, and notification features.
 
 All browser API requests go to `api-gateway`. It routes `/api/auth/*` to `auth-service`, `/api/identity/*` to `identity-service`, `/api/squads/*` to `squad-service`, `/api/events/*` to `event-service`, and `/api/chat/*` plus chat WebSocket upgrades to `chat-service`.
 
@@ -40,11 +40,12 @@ The recommendation service will consume approved event data through service APIs
 
 ## Local development
 
-Prerequisites: Node.js 22+, pnpm 11+, and a reachable PostgreSQL instance.
+Prerequisites: Node.js 22+, pnpm 11+, and a reachable PostgreSQL instance. The API gateway, auth service, and Next.js UI must all be running for real account flows.
 
 ```bash
 pnpm install
 cp app/microservices/auth-service/.env.example app/microservices/auth-service/.env
+# Set DATABASE_URL in the copied file before continuing.
 pnpm --filter squadsync-auth-service migrate
 pnpm run dev:all
 ```
@@ -60,7 +61,7 @@ root `dev:*` scripts when you only need one service.
 
 The UI runs at <http://localhost:3000>, the API gateway at <http://localhost:4000>, and the auth service at <http://localhost:4001>.
 
-The demo UI login is `admin / password`. Its current squads, events, voting, and chat data are stored in browser localStorage until those APIs are implemented.
+Real account credentials are stored by `auth-service` in PostgreSQL. The current squads, events, voting, and chat data remain in browser localStorage until those APIs are implemented.
 
 ## Docker
 
@@ -68,6 +69,8 @@ PostgreSQL is intentionally external to Docker because it is hosted on the local
 
 ```bash
 cp deploy/.env.example deploy/.env
+# Set DATABASE_URL and the other deployment values in deploy/.env.
+pnpm --filter squadsync-auth-service migrate
 docker compose -f deploy/compose.yaml up --build
 ```
 

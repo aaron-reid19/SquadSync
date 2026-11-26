@@ -3,12 +3,12 @@ import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./auth";
+import { db } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
 import { assertRequiredConfig } from "./shared/config";
 import { createLogger, errorHandler, requestIdOf, requestLogging } from "./shared/expressObservability";
 import { cacheSuccess, postgresCheck, runReadiness } from "./shared/readiness";
-import { db } from "./db";
 import { verifyMailTransport } from "./mailer";
 
 assertRequiredConfig("auth-service", ["DATABASE_URL", "APP_URL"]);

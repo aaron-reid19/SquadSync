@@ -1,6 +1,7 @@
 import { FocusEvent, FormEvent, useEffect, useRef, useState } from "react";
+import { AuthError, checkUsername } from "../lib/auth";
 import { useStore } from "../lib/data/store";
-import { FIELD_ORDER, validateField, type SignupErrors, type SignupValues } from "../lib/validation";
+import { FIELD_ORDER, TERMS_VERSION, validateField, type SignupErrors, type SignupValues } from "../lib/validation";
 
 export type UsernameStatus = "idle" | "checking" | "available" | "taken";
 
@@ -15,7 +16,7 @@ const empty: SignupValues = {
 const focusField = (id: string) => document.getElementById(id)?.focus();
 
 export function useSignupForm(onSuccess: () => void) {
-  const { signup, isUsernameTaken } = useStore();
+  const { signup } = useStore();
   const [values, setValues] = useState<SignupValues>(empty);
   const [errors, setErrors] = useState<SignupErrors>({});
   const [formError, setFormError] = useState("");
@@ -55,7 +56,7 @@ export function useSignupForm(onSuccess: () => void) {
     revalidate(values, key);
   }
 
-  // Debounced "is this username free?" check (MVP: against the mock store instead of the server).
+  // Debounced availability check against the auth service.
   useEffect(() => {
     const u = values.username.trim().toLowerCase();
     if (!USERNAME_FORMAT.test(u)) return setUsernameStatus("idle");
@@ -65,16 +66,28 @@ export function useSignupForm(onSuccess: () => void) {
       return;
     }
     setUsernameStatus("checking");
+    const controller = new AbortController();
     const timer = window.setTimeout(() => {
-      if (isUsernameTaken(u)) {
-        taken.current.add(u);
-        setUsernameStatus("taken");
-        setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
-      } else {
-        setUsernameStatus("available");
-      }
+      void checkUsername(u, controller.signal)
+        .then((available) => {
+          if (available) {
+            setUsernameStatus("available");
+            return;
+          }
+          taken.current.add(u);
+          setUsernameStatus("taken");
+          setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
+        })
+        .catch((error: unknown) => {
+          if (controller.signal.aborted) return;
+          setUsernameStatus("idle");
+          if (error instanceof AuthError) setFormError(error.message);
+        });
     }, 300);
-    return () => window.clearTimeout(timer);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
   }, [values.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit(e: FormEvent) {
@@ -92,20 +105,30 @@ export function useSignupForm(onSuccess: () => void) {
     if (first) return focusField(first);
 
     setSubmitting(true);
-    const result = await signup({
-      email: values.email,
-      password: values.password,
-      firstName: values.firstName.trim(),
-      lastName: values.lastName.trim(),
-      username: values.username,
-      phone: values.phone.trim() || undefined,
-      city: values.city.trim(),
-      travelKm: Number(values.travelKm),
-      pronouns: values.pronouns || undefined,
-      bio: values.bio.trim() || undefined,
-      interests: values.interests,
-      transport: values.transport,
-    });
+    let result: Awaited<ReturnType<typeof signup>>;
+    try {
+      result = await signup({
+        email: values.email,
+        password: values.password,
+        firstName: values.firstName.trim(),
+        lastName: values.lastName.trim(),
+        username: values.username,
+        dob: values.dob,
+        phone: values.phone.trim() || undefined,
+        city: values.city.trim(),
+        travelKm: Number(values.travelKm),
+        pronouns: values.pronouns || undefined,
+        bio: values.bio.trim() || undefined,
+        interests: values.interests,
+        transport: values.transport,
+        acceptTerms: true,
+        termsVersion: TERMS_VERSION,
+      });
+    } catch (error: unknown) {
+      setFormError(error instanceof AuthError ? error.message : "We couldn't create your account. Try again soon.");
+      setSubmitting(false);
+      return;
+    }
     setSubmitting(false);
     if (result.ok) {
       setValues(empty); // clears the password from memory
