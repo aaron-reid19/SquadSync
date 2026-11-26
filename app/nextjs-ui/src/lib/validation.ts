@@ -68,6 +68,7 @@ const NAME_PATTERN = /^\p{L}[\p{L}\p{M} '’.-]*$/u;
 
 export const MIN_AGE = 18;
 export const MAX_AGE = 100; // change this one number to loosen or tighten the limit
+export const TERMS_VERSION = "2026-10-20"; // must match auth-service/src/schemas.ts
 
 /** Age in whole years for a YYYY-MM-DD string, or null if it isn't a real calendar date. */
 export function ageFromDob(dob: string): number | null {

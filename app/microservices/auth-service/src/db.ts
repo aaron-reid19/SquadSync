@@ -2,7 +2,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.warn("DATABASE_URL is not set: the auth service cannot connect to PostgreSQL.");
+  throw new Error("DATABASE_URL is required before the auth service can start.");
 }
 
 export const db = new Pool({
@@ -13,6 +13,10 @@ export const db = new Pool({
 
 export function query<T extends QueryResultRow>(text: string, values: unknown[] = []) {
   return db.query<T>(text, values);
+}
+
+export async function checkDatabase() {
+  await db.query("SELECT 1");
 }
 
 export async function withTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {

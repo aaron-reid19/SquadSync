@@ -147,7 +147,7 @@ spec:
                   key: AUTH_DATABASE_URL
           readinessProbe:
             httpGet:
-              path: /health
+              path: /ready
               port: http
             initialDelaySeconds: 10
             periodSeconds: 10

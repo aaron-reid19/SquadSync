@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./auth";
+import { checkDatabase } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
 
@@ -21,6 +22,15 @@ app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
 app.get("/health", (_req, res) => res.json({ ok: true, service: "auth" }));
+app.get("/ready", async (_req, res) => {
+  try {
+    await checkDatabase();
+    res.json({ ok: true, service: "auth", database: "ready" });
+  } catch (error) {
+    console.error("Auth readiness check failed:", error instanceof Error ? error.message : "unknown error");
+    res.status(503).json({ ok: false, service: "auth", database: "unavailable" });
+  }
+});
 app.use("/api/auth", authRouter);
 app.use("/api/auth", passwordResetRouter);
 app.use("/api/auth", signupRouter);

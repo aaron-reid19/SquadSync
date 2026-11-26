@@ -7,7 +7,42 @@
 export class AuthError extends Error {
   constructor(message: string, public status?: number, public retryAfterSeconds?: number, public field?: string) {
     super(message);
+    this.name = "AuthError";
   }
+}
+
+export interface AuthUser {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  dob: string;
+  phone: string;
+  city: string;
+  travelKm: number;
+  pronouns: string;
+  bio: string;
+  interests: string[];
+  transport: string[];
+}
+
+export interface SignupPayload {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  dob: string;
+  phone?: string;
+  city: string;
+  travelKm: number;
+  pronouns?: string;
+  bio?: string;
+  interests: string[];
+  transport: string[];
+  acceptTerms: true;
+  termsVersion: string;
 }
 
 const GENERIC_ERROR = "We couldn't log you in. Check your details and try again.";
@@ -21,7 +56,7 @@ async function getCsrfToken(signal: AbortSignal): Promise<string> {
   return data.csrfToken;
 }
 
-async function post(path: string, body: unknown, failMessage = GENERIC_ERROR): Promise<void> {
+async function post<T = void>(path: string, body: unknown, failMessage = GENERIC_ERROR): Promise<T> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -34,7 +69,10 @@ async function post(path: string, body: unknown, failMessage = GENERIC_ERROR): P
       body: JSON.stringify(body),
     });
 
-    if (res.ok) return;
+    if (res.ok) {
+      if (res.status === 204) return undefined as T;
+      return (await res.json().catch(() => undefined)) as T;
+    }
     if (res.status === 429) {
       const wait = Number(res.headers.get("Retry-After")) || 60;
       throw new AuthError(`Too many attempts. Try again in ${wait} seconds.`, 429, wait);
@@ -54,9 +92,6 @@ async function post(path: string, body: unknown, failMessage = GENERIC_ERROR): P
   }
 }
 
-export const loginWithPassword = (email: string, password: string) =>
-  post("/api/auth/login", { email: email.trim().toLowerCase(), password });
-
 /** `credential` is the Google ID token (JWT). The SERVER verifies it. */
 export const loginWithGoogle = (credential: string) => post("/api/auth/google", { credential });
 
@@ -66,8 +101,42 @@ export const requestPasswordReset = (email: string) =>
 export const resetPassword = (token: string, password: string) =>
   post("/api/auth/reset-password", { token, password }, "This reset link is invalid or has expired. Request a new one.");
 
-export const signUp = (payload: Record<string, unknown>) =>
-  post("/api/auth/signup", payload, "We couldn't create your account. Check your details and try again.");
+export async function signUp(payload: SignupPayload): Promise<AuthUser> {
+  await post("/api/auth/signup", payload, "We couldn't create your account. Check your details and try again.");
+  const user = await getCurrentUser();
+  if (!user) throw new AuthError(NETWORK_ERROR);
+  return user;
+}
+
+export async function getCurrentUser(): Promise<AuthUser | null> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const res = await fetch("/api/auth/me", { credentials: "include", cache: "no-store", signal: controller.signal });
+    if (res.status === 401) return null;
+    if (!res.ok) throw new AuthError(NETWORK_ERROR, res.status);
+    return (await res.json()) as AuthUser;
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new AuthError("The request timed out. Check your connection and try again.");
+    }
+    throw new AuthError(NETWORK_ERROR);
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+export async function loginWithPassword(identifier: string, password: string): Promise<AuthUser> {
+  await post("/api/auth/login", { identifier: identifier.trim().toLowerCase(), password });
+  const user = await getCurrentUser();
+  if (!user) throw new AuthError(GENERIC_ERROR, 401);
+  return user;
+}
+
+export function logoutFromServer() {
+  return post("/api/auth/logout", {}, "Couldn't log you out. Try again.");
+}
 
 export async function checkUsername(username: string, signal: AbortSignal): Promise<boolean> {
   const res = await fetch(`/api/auth/username-available?u=${encodeURIComponent(username)}`, {

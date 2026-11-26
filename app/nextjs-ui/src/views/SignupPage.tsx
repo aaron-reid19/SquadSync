@@ -37,9 +37,7 @@ export default function SignupPage() {
   return (
     <AuthLayout wide title="Join SquadSync" lead="Tell us about you so your Squad can find you.">
       <StepProgress current={1} />
-      <p className="demo-hint">
-        Demo mode: your account is saved in this browser only. Prefer to skip? <Link className="link" href="/login">Log in as admin</Link>
-      </p>
+      <p className="demo-hint">Your account is securely saved to SquadSync.</p>
 
       <form onSubmit={submit} onBlur={blur} noValidate>
         <fieldset className="group">

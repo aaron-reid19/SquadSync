@@ -1,13 +1,14 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { ADMIN, AVATAR_COLORS, createSeed, DB_VERSION } from "./seed";
+import { AuthError, getCurrentUser, loginWithPassword, logoutFromServer, signUp, type AuthUser } from "../auth";
+import { AVATAR_COLORS, createSeed, DB_VERSION } from "./seed";
 import type { Area, AvailabilityKey, DB, Message, Squad, SquadEvent, Suggestion, User } from "./types";
 import { uid } from "../format";
 
 const DB_KEY = "squadsync:db";
 const SESSION_KEY = "squadsync:session";
-const CREDS_KEY = "squadsync:credentials"; // demo-only accounts made on the sign-up page
+const LEGACY_CREDS_KEY = "squadsync:credentials";
 
 // ---------- browser storage helpers (never throw: private windows can block storage) ----------
 function readJson<T>(key: string): T | null {
@@ -26,11 +27,6 @@ function writeJson(key: string, value: unknown) {
   }
 }
 
-async function sha256(text: string) {
-  const bytes = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
-  return Array.from(new Uint8Array(bytes), (b) => b.toString(16).padStart(2, "0")).join("");
-}
-
 const CANNED_REPLIES = [
   "I'm in 🙌", "Works for me!", "Who's driving?", "Can we do a bit later?", "Love that idea",
   "Voted ✅", "Ooh yes", "As long as there's food 😂", "I'll check my schedule and get back to you",
@@ -47,8 +43,52 @@ export interface NewEventInput {
   ideas: { title: string; category: string; price: 1 | 2 | 3; note?: string }[];
 }
 
-export interface SignupInput extends Omit<User, "id" | "color" | "availability"> {
+export interface SignupInput {
+  email: string;
   password: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  dob: string;
+  phone?: string;
+  city: string;
+  travelKm: number;
+  pronouns?: string;
+  bio?: string;
+  interests: string[];
+  transport: string[];
+  acceptTerms: true;
+  termsVersion: string;
+}
+
+function localUserFromAuth(authUser: AuthUser, color: string, existing?: User): User {
+  return {
+    id: authUser.id,
+    username: authUser.username || existing?.username || authUser.email.split("@")[0],
+    email: authUser.email,
+    firstName: authUser.firstName || existing?.firstName || "SquadSync",
+    lastName: authUser.lastName || existing?.lastName || "member",
+    pronouns: authUser.pronouns || existing?.pronouns,
+    phone: authUser.phone || existing?.phone,
+    bio: authUser.bio || existing?.bio,
+    city: authUser.city || existing?.city || "Calgary",
+    travelKm: authUser.travelKm || existing?.travelKm || 25,
+    interests: authUser.interests ?? existing?.interests ?? [],
+    transport: authUser.transport ?? existing?.transport ?? [],
+    color: existing?.color ?? color,
+    availability: existing?.availability ?? [],
+  };
+}
+
+function mergeAuthUser(database: DB, authUser: AuthUser): DB {
+  const existingIndex = database.users.findIndex((user) => user.id === authUser.id || user.email === authUser.email);
+  const existing = existingIndex >= 0 ? database.users[existingIndex] : undefined;
+  const localUser = localUserFromAuth(authUser, AVATAR_COLORS[database.users.length % AVATAR_COLORS.length], existing);
+  if (existingIndex < 0) return { ...database, users: [...database.users, localUser] };
+  return {
+    ...database,
+    users: database.users.map((user, index) => (index === existingIndex ? localUser : user)),
+  };
 }
 
 interface Store {
@@ -59,7 +99,6 @@ interface Store {
   // auth
   login: (username: string, password: string) => Promise<boolean>;
   signup: (input: SignupInput) => Promise<{ ok: true } | { ok: false; field: "username" | "email"; error: string }>;
-  isUsernameTaken: (username: string) => boolean;
   logout: () => void;
   // profile
   updateProfile: (patch: Partial<Omit<User, "id" | "username">>) => void;
@@ -90,17 +129,33 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
-  // Load once on the client. The PostgreSQL-backed services will replace this
-  // demo persistence layer as the API contracts are implemented.
+  // Load the demo domain projection and hydrate the authenticated user from
+  // the server session cookie. Domain persistence is still local until those
+  // APIs are implemented, but credentials never live in browser storage.
   useEffect(() => {
     let cancelled = false;
     (async () => {
       const stored = readJson<DB>(DB_KEY);
       const loaded = stored?.version === DB_VERSION ? stored : null;
+      try { localStorage.removeItem(LEGACY_CREDS_KEY); } catch { /* ignore */ }
+      let initial = loaded ?? createSeed();
+      let serverUser: AuthUser | null = null;
+      try {
+        serverUser = await getCurrentUser();
+      } catch {
+        // Keep the shell usable while the API is starting, but do not trust a
+        // browser-only session as authentication.
+      }
       if (cancelled) return;
-      const initial = loaded ?? createSeed();
+      if (serverUser) {
+        initial = mergeAuthUser(initial, serverUser);
+        setSessionId(serverUser.id);
+        writeJson(SESSION_KEY, serverUser.id);
+      } else {
+        setSessionId(null);
+        try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
+      }
       setDb(initial);
-      setSessionId(readJson<string>(SESSION_KEY));
       setReady(true);
     })();
     return () => {
@@ -127,9 +182,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const store = useMemo<Store>(() => {
     const user = (id: string) => db.users.find((u) => u.id === id);
-    const startSession = (id: string) => {
-      setSessionId(id);
-      writeJson(SESSION_KEY, id);
+    const startServerSession = (authUser: AuthUser) => {
+      setDb((current) => mergeAuthUser(current, authUser));
+      setSessionId(authUser.id);
+      writeJson(SESSION_KEY, authUser.id);
     };
 
     return {
@@ -139,41 +195,31 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       user,
 
       async login(username, password) {
-        const name = username.trim().toLowerCase();
-        if (name === ADMIN.username && password === ADMIN.password) {
-          startSession(ADMIN.id);
+        try {
+          const authUser = await loginWithPassword(username, password);
+          startServerSession(authUser);
           return true;
+        } catch {
+          return false;
         }
-        const creds = readJson<Record<string, string>>(CREDS_KEY) ?? {};
-        const found = db.users.find((u) => u.username === name || u.email === name);
-        if (found && creds[found.username] && creds[found.username] === (await sha256(password))) {
-          startSession(found.id);
-          return true;
-        }
-        return false;
       },
 
-      isUsernameTaken: (username) => db.users.some((u) => u.username === username.trim().toLowerCase()),
-
-      async signup({ password, ...profile }) {
-        const username = profile.username.trim().toLowerCase();
-        const email = profile.email.trim().toLowerCase();
-        if (db.users.some((u) => u.username === username)) return { ok: false, field: "username", error: "That username is taken." };
-        if (db.users.some((u) => u.email === email)) return { ok: false, field: "email", error: "An account with that email already exists." };
-        const newUser: User = {
-          ...profile, username, email, id: uid("u"),
-          color: AVATAR_COLORS[db.users.length % AVATAR_COLORS.length], availability: [],
-        };
-        const creds = readJson<Record<string, string>>(CREDS_KEY) ?? {};
-        creds[username] = await sha256(password);
-        writeJson(CREDS_KEY, creds);
-        setDb((d) => ({ ...d, users: [...d.users, newUser] }));
-        startSession(newUser.id);
-        return { ok: true };
+      async signup(input) {
+        try {
+          const authUser = await signUp(input);
+          startServerSession(authUser);
+          return { ok: true };
+        } catch (error) {
+          if (error instanceof AuthError && error.status === 409 && (error.field === "username" || error.field === "email")) {
+            return { ok: false, field: error.field, error: error.message };
+          }
+          throw error;
+        }
       },
 
       logout() {
         setSessionId(null);
+        void logoutFromServer().catch(() => undefined);
         try { localStorage.removeItem(SESSION_KEY); } catch { /* ignore */ }
       },
 
@@ -319,9 +365,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
       resetDemo() {
         const fresh = createSeed();
-        setDb(fresh);
-        try { localStorage.removeItem(CREDS_KEY); } catch { /* ignore */ }
-        startSession(ADMIN.id);
+        setDb(me ? { ...fresh, users: [...fresh.users, me] } : fresh);
       },
     };
   }, [db, me, myId, ready, updateEvent, pushMessage]);

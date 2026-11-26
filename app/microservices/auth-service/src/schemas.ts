@@ -3,7 +3,7 @@ import { z } from "zod";
 // Server-side validation: the browser checks are only for convenience.
 export const loginSchema = z
   .object({
-    email: z.string().trim().toLowerCase().email().max(254),
+    identifier: z.string().trim().toLowerCase().min(3).max(254),
     password: z.string().min(8).max(128),
   })
   .strict();
