@@ -34,6 +34,8 @@ CREATE TABLE IF NOT EXISTS profiles (
   bio TEXT,
   interests JSONB NOT NULL,
   transport JSONB NOT NULL,
+  availability JSONB NOT NULL DEFAULT '[]'::jsonb,
+  color TEXT NOT NULL DEFAULT '#59bfdf',
   onboarding_step INTEGER NOT NULL DEFAULT 2,
   terms_version TEXT NOT NULL DEFAULT '',
   terms_accepted_at DOUBLE PRECISION NOT NULL DEFAULT 0,

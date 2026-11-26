@@ -21,4 +21,4 @@ Expected implementation:
 - Use the WebSocket layer for connection lifecycle and delivery, not database rules.
 - Support reconnects, ordered message timestamps, and safe broadcast behavior.
 
-The current REST and WebSocket handlers are scaffolds and do not persist messages yet. Database creation and migrations live centrally under `database/postgres/migrations/`.
+The REST and WebSocket handlers persist event chat messages in PostgreSQL. Database creation and migrations live centrally under `database/postgres/migrations/`.

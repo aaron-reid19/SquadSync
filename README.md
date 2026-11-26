@@ -11,9 +11,9 @@ app/
     ├── api-gateway/            # Single HTTP and WebSocket entry point
     ├── auth-service/           # Credential authentication and account flows
     ├── identity-service/       # JWT issuer, JWKS, and identity contract
-    ├── squad-service/          # Squad boundary scaffold
-    ├── event-service/          # Event and voting boundary scaffold
-    ├── chat-service/           # Authenticated chat and WebSocket scaffold
+    ├── squad-service/          # PostgreSQL-backed squad boundary
+    ├── event-service/          # PostgreSQL-backed event and voting boundary
+    ├── chat-service/           # PostgreSQL-backed chat boundary
     └── notification-worker/    # Internal notification delivery scaffold
 database/postgres/              # PostgreSQL migrations and database notes
 deploy/                         # Docker Compose and deployment environment examples
@@ -28,7 +28,7 @@ k8s/                            # Planned Kubernetes manifests
 argocd/                          # Planned Argo CD Application definitions
 ```
 
-The identity, squad, event, chat, and notification services now have deployable Fastify scaffolds. Their domain persistence and business workflows are intentionally not implemented yet; scaffold endpoints return `501` until their contracts are built. Account signup, login, sessions, and password reset now use the auth service; the UI still uses its seeded browser demo store for squad, event, chat, and notification features.
+The identity, squad, event, chat, and notification services are deployable Fastify workloads. Auth, squads, events, voting, availability, profiles, and chat now persist through PostgreSQL-backed service APIs. The recommendation service remains planned.
 
 All browser API requests go to `api-gateway`. It routes `/api/auth/*` to `auth-service`, `/api/identity/*` to `identity-service`, `/api/squads/*` to `squad-service`, `/api/events/*` to `event-service`, and `/api/chat/*` plus chat WebSocket upgrades to `chat-service`.
 
@@ -61,7 +61,7 @@ root `dev:*` scripts when you only need one service.
 
 The UI runs at <http://localhost:3000>, the API gateway at <http://localhost:4000>, and the auth service at <http://localhost:4001>.
 
-Real account credentials are stored by `auth-service` in PostgreSQL. The current squads, events, voting, and chat data remain in browser localStorage until those APIs are implemented.
+Account credentials, profiles, squads, events, voting, availability, and chat messages are stored in PostgreSQL. The browser keeps only the in-memory view needed to render the current session; it is not a source of persistence.
 
 ## Docker
 
@@ -74,7 +74,7 @@ pnpm --filter squadsync-auth-service migrate
 docker compose -f deploy/compose.yaml up --build
 ```
 
-The Compose setup runs the Next.js UI, API gateway, authentication, identity, squad, event, chat, and notification scaffolds. The planned recommendation service is not included yet. It connects PostgreSQL-backed services using the `DATABASE_URL` in `deploy/.env`.
+The Compose setup runs the Next.js UI, API gateway, authentication, identity, squad, event, chat, and notification services. The planned recommendation service is not included yet. It connects PostgreSQL-backed services using the `DATABASE_URL` in `deploy/.env`.
 
 Docker Compose is the interim deployment target for local development and initial home-server deployments. It keeps PostgreSQL outside the application stack because the database is hosted directly on the home server.
 
@@ -107,9 +107,15 @@ Only the application hostname should be public. The API gateway and microservice
 ## Database migrations
 
 ```bash
-npm --prefix app/microservices/auth-service run migrate
-npm --prefix app/microservices/auth-service run seed -- you@example.com "AtLeast8Chars"
+pnpm --filter squadsync-auth-service migrate
+pnpm --filter squadsync-auth-service seed:demo
 ```
+
+The demo seeder creates the original sample workspace in PostgreSQL, including
+the admin test account `admin@squadsync.app` / `password`, sample Squads,
+events, votes, availability, finalized plans, and chat history. Use a separate
+one-off environment with `AUTH_DATABASE_URL`, `SQUAD_DATABASE_URL`,
+`EVENT_DATABASE_URL`, and `CHAT_DATABASE_URL` when those databases are split.
 
 Migration files live in `database/postgres/migrations/`. Never commit database credentials or PostgreSQL data files.
 

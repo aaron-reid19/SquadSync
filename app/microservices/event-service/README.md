@@ -20,4 +20,4 @@ Expected implementation:
 - Put scheduling and voting invariants in services, not controllers or SQL-only conventions.
 - Emit notification requests only after successful domain transactions.
 
-The current endpoints are authenticated scaffolds and return `501` until this layer is implemented. Database creation and migrations live centrally under `database/postgres/migrations/`.
+The authenticated event endpoints persist events, slots, availability, suggestions, votes, RSVPs, and finalized plans in PostgreSQL. Database creation and migrations live centrally under `database/postgres/migrations/`.

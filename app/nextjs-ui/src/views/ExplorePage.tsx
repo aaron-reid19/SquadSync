@@ -78,7 +78,7 @@ export default function ExplorePage() {
                   going ? (
                     <Link href={`/events/${e.id}`} className="btn btn--small btn--green">✓ Signed up</Link>
                   ) : (
-                    <button type="button" className="btn btn--small btn--primary" onClick={() => rsvp(e.id, true)}>Sign up</button>
+                    <button type="button" className="btn btn--small btn--primary" onClick={() => void rsvp(e.id, true)}>Sign up</button>
                   )
                 } />
               );

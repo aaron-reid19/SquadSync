@@ -1,4 +1,4 @@
-// Shapes shared by the demo store and the future service API clients.
+// Shapes shared by the API-backed store and the UI.
 
 /** Availability grid key: `${day}-${block}` where day 0 = Monday and block indexes BLOCKS. */
 export type AvailabilityKey = `${number}-${number}`;

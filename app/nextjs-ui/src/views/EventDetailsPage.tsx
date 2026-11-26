@@ -73,10 +73,10 @@ export default function EventDetailsPage() {
 
           <div className="rsvp" role="group" aria-label="Sign up">
             <span className="rsvp__q">Are you in?</span>
-            <button type="button" className={`btn btn--small btn--auto ${going ? "btn--green" : ""}`} aria-pressed={going} onClick={() => rsvp(event.id, true)}>
+            <button type="button" className={`btn btn--small btn--auto ${going ? "btn--green" : ""}`} aria-pressed={going} onClick={() => void rsvp(event.id, true)}>
               {going ? "✓ I'm in" : "I'm in"}
             </button>
-            <button type="button" className={`btn btn--small btn--auto ${declined ? "btn--red" : ""}`} aria-pressed={declined} onClick={() => rsvp(event.id, false)}>
+            <button type="button" className={`btn btn--small btn--auto ${declined ? "btn--red" : ""}`} aria-pressed={declined} onClick={() => void rsvp(event.id, false)}>
               Can&apos;t make it
             </button>
           </div>

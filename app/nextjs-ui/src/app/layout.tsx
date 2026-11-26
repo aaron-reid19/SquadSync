@@ -9,7 +9,6 @@ import "leaflet/dist/leaflet.css";
 import "@/styles.css";
 import "@/app.css";
 import "@/ui-polish.css";
-import ClientOnly from "@/components/ClientOnly";
 
 export const metadata: Metadata = {
   title: { default: "SquadSync", template: "%s · SquadSync" },
@@ -22,9 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body>
         <StoreProvider>
-          <ClientOnly>
-            <Suspense fallback={null}>{children}</Suspense>
-          </ClientOnly>
+          <Suspense fallback={null}>{children}</Suspense>
         </StoreProvider>
       </body>
     </html>

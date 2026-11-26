@@ -13,6 +13,7 @@ The auth service owns account authentication and the `auth_db` database.
 - `src/db.ts` — owns the PostgreSQL pool and low-level database connection setup.
 - `src/mailer.ts` — adapts the configured mail provider for password-reset delivery.
 - `src/index.ts` — composes the Express application and starts the service.
+- `src/seedDemo.ts` — idempotently creates the admin test account and sample PostgreSQL workspace.
 
 Expected implementation:
 

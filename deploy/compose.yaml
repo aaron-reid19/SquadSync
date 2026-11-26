@@ -8,8 +8,13 @@ services:
         required: false
     environment:
       PORT: 4001
+      IDENTITY_SERVICE_URL: http://identity-service:4100
+      IDENTITY_COOKIE_NAME: squadsync-access
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      identity-service:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test:

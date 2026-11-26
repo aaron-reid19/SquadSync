@@ -10,6 +10,14 @@ export const pool = new pg.Pool({
   connectionTimeoutMillis: Number(process.env.DB_CONNECT_TIMEOUT_MS) || 5000,
 });
 
+export function query<T extends pg.QueryResultRow>(text: string, values: unknown[] = []) {
+  return pool.query<T>(text, values);
+}
+
+export function checkDatabase() {
+  return pool.query("SELECT 1");
+}
+
 // Without this handler, an error on an idle connection would crash the whole process.
 pool.on("error", (error) => {
   console.error(JSON.stringify({ level: 50, time: Date.now(), msg: "postgres pool error", err: error.message }));

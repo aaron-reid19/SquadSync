@@ -25,6 +25,8 @@ export interface AuthUser {
   bio: string;
   interests: string[];
   transport: string[];
+  availability: `${number}-${number}`[];
+  color: string;
 }
 
 export interface SignupPayload {
@@ -137,6 +139,36 @@ export async function loginWithPassword(identifier: string, password: string): P
 export function logoutFromServer() {
   return post("/api/auth/logout", {}, "Couldn't log you out. Try again.");
 }
+
+async function updateWithCsrf<T>(method: "PATCH" | "PUT", path: string, body: unknown): Promise<T> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const csrf = await getCsrfToken(controller.signal);
+    const res = await fetch(path, {
+      method,
+      credentials: "include",
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", "X-CSRF-Token": csrf },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) return (await res.json().catch(() => undefined)) as T;
+    const data = await res.json().catch(() => ({})) as { error?: string; field?: string };
+    throw new AuthError(data.error ?? "Couldn't save your changes.", res.status, undefined, data.field);
+  } catch (err) {
+    if (err instanceof AuthError) throw err;
+    if (err instanceof DOMException && err.name === "AbortError") throw new AuthError("The request timed out. Check your connection and try again.");
+    throw new AuthError(NETWORK_ERROR);
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
+export const updateCurrentUser = (patch: Partial<Omit<AuthUser, "id" | "username" | "dob" | "availability">>) =>
+  updateWithCsrf<void>("PATCH", "/api/auth/me", patch);
+
+export const updateCurrentAvailability = (availability: AuthUser["availability"]) =>
+  updateWithCsrf<void>("PUT", "/api/auth/me/availability", { availability });
 
 export async function checkUsername(username: string, signal: AbortSignal): Promise<boolean> {
   const res = await fetch(`/api/auth/username-available?u=${encodeURIComponent(username)}`, {

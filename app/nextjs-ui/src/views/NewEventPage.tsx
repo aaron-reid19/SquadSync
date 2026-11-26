@@ -87,7 +87,7 @@ export default function NewEventPage() {
       .join(", ")}.`);
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const now = Date.now();
     // Infinity when there are no valid slots, so the slots error shows instead of a deadline error.
@@ -109,7 +109,7 @@ export default function NewEventPage() {
     if (first) return document.getElementById(first)?.focus();
 
     const area = AREAS.find((a) => a.name === areaName) ?? AREAS[0];
-    const event = createEvent({
+    const event = await createEvent({
       squadId, title, description, visibility, area: { ...area },
       voteDeadline: new Date(deadline).toISOString(),
       slots: slots.map((s) => {
