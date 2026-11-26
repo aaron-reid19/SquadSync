@@ -3,13 +3,12 @@ import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./auth";
-import { checkDatabase } from "./db";
+import { db } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
 import { assertRequiredConfig } from "./shared/config";
 import { createLogger, errorHandler, requestIdOf, requestLogging } from "./shared/expressObservability";
 import { cacheSuccess, postgresCheck, runReadiness } from "./shared/readiness";
-import { db } from "./db";
 import { verifyMailTransport } from "./mailer";
 
 assertRequiredConfig("auth-service", ["DATABASE_URL", "APP_URL"]);
@@ -34,21 +33,11 @@ app.use(cookieParser());
 const smtpCheck = { critical: false, run: cacheSuccess(verifyMailTransport, 60_000) };
 app.get("/health", (_req, res) => res.json({ ok: true, service: "auth" }));
 app.get("/ready", async (_req, res) => {
-<<<<<<< HEAD
   const result = await runReadiness({ database: postgresCheck(db), smtp: smtpCheck });
   if (Object.keys(result.failures).length) {
     log.warn({ reqId: requestIdOf(res), failures: result.failures }, result.ok ? "degraded" : "not ready");
   }
   res.status(result.statusCode).json({ ok: result.ok, service: "auth", checks: result.checks });
-=======
-  try {
-    await checkDatabase();
-    res.json({ ok: true, service: "auth", database: "ready" });
-  } catch (error) {
-    console.error("Auth readiness check failed:", error instanceof Error ? error.message : "unknown error");
-    res.status(503).json({ ok: false, service: "auth", database: "unavailable" });
-  }
->>>>>>> origin/main
 });
 app.use("/api/auth", authRouter);
 app.use("/api/auth", passwordResetRouter);
