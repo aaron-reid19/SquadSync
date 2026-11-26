@@ -1,19 +1,14 @@
-import "dotenv/config";
-import pg from "pg";
+import { Pool, type QueryResultRow } from "pg";
 
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set");
-}
+if (!connectionString) throw new Error("DATABASE_URL is required for chat-service");
 
-// One shared pool for the whole service. Repositories import this and call pool.query(...).
-export const pool = new pg.Pool({
+export const db = new Pool({
   connectionString,
   max: Number(process.env.DB_POOL_MAX) || 10,
   ssl: process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
 });
 
-// Without this handler, an error on an idle connection would crash the whole process.
-pool.on("error", (error) => {
-  console.error("Unexpected Postgres pool error:", error.message);
-});
+export function query<T extends QueryResultRow>(sql: string, values: unknown[] = []) {
+  return db.query<T>(sql, values);
+}
