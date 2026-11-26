@@ -2,7 +2,7 @@ import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.warn("DATABASE_URL is not set: the auth service cannot connect to PostgreSQL.");
+  throw new Error("DATABASE_URL is required for auth-service");
 }
 
 export const db = new Pool({

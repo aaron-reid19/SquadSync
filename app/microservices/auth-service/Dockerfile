@@ -6,8 +6,8 @@ RUN npm ci
 COPY app/microservices/auth-service ./
 
 ENV NODE_ENV=production
-ENV PORT=4000
-EXPOSE 4000
+ENV PORT=4001
+EXPOSE 4001
 
 USER node
 CMD ["npm", "run", "start"]
