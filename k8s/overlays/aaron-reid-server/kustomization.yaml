@@ -6,20 +6,20 @@ resources:
 
 images:
   - name: ghcr.io/aaron-reid19/squadsync/nextjs-ui
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/api-gateway
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/auth-service
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/identity-service
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/squad-service
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/event-service
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/chat-service
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/notification-worker
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
   - name: ghcr.io/aaron-reid19/squadsync/postgres-migrations
-    newTag: b01bd7745749c433f891ca09e78c65150c7e3139
+    newTag: ad0a32289290dc869b7c71c8874f595fdc9d1e38
