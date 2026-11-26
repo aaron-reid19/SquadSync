@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - ../../base
+  - demo-seed-job.yaml
 
 images:
   - name: ghcr.io/aaron-reid19/squadsync/nextjs-ui

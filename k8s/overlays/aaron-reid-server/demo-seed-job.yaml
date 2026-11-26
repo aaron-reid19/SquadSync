@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: squadsync-demo-seed
+  annotations:
+    # QA/demo-only data. Run after schema migrations and before workloads.
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "15"
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: demo-seed
+          image: ghcr.io/aaron-reid19/squadsync/auth-service:latest
+          command:
+            - npm
+            - run
+            - seed:demo
+          envFrom:
+            - secretRef:
+                name: squadsync-database-urls
