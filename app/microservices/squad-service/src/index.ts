@@ -5,7 +5,7 @@ import cookie from "@fastify/cookie";
 import { assertRequiredConfig } from "./shared/config.js";
 import { pool } from "./shared/db.js";
 import { jwksCheck, postgresCheck, runReadiness } from "./shared/readiness.js";
-import { requireIdentity } from "./auth.js";
+import { squadRoutes } from "./routes/squadRoutes.js";
 
 assertRequiredConfig("squad-service", ["DATABASE_URL", "IDENTITY_JWKS_URL", "IDENTITY_ISSUER"]);
 
@@ -29,13 +29,7 @@ app.get("/ready", async (request, reply) => {
   return reply.code(result.statusCode).send({ ok: result.ok, service: "squad", checks: result.checks });
 });
 
-app.get("/api/squads", { preHandler: requireIdentity }, async (_request, reply) =>
-  reply.code(501).send({ error: "Squad service scaffold: persistence is not implemented" }),
-);
-
-app.post("/api/squads", { preHandler: requireIdentity }, async (_request, reply) =>
-  reply.code(501).send({ error: "Squad service scaffold: persistence is not implemented" }),
-);
+await app.register(squadRoutes);
 
 app.listen({ port, host: "0.0.0.0" }).catch((error) => {
   app.log.error(error);

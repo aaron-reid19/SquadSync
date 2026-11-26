@@ -28,7 +28,7 @@ k8s/                            # Planned Kubernetes manifests
 argocd/                          # Planned Argo CD Application definitions
 ```
 
-The identity, squad, event, chat, and notification services now have deployable Fastify scaffolds. Their domain persistence and business workflows are intentionally not implemented yet; scaffold endpoints return `501` until their contracts are built. The current UI still uses its seeded browser demo store for event, chat, and notification features.
+The identity, squad, event, chat, and notification services are deployable Fastify services. The squad service persists Squads and memberships in PostgreSQL (see `app/microservices/squad-service/README.md`); the event, chat, and notification endpoints are still scaffolds that return `501` until their contracts are built. The current UI still uses its seeded browser demo store for event, chat, and notification features.
 
 All browser API requests go to `api-gateway`. It routes `/api/auth/*` to `auth-service`, `/api/identity/*` to `identity-service`, `/api/squads/*` to `squad-service`, `/api/events/*` to `event-service`, and `/api/chat/*` plus chat WebSocket upgrades to `chat-service`.
 
