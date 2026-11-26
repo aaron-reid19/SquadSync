@@ -22,9 +22,6 @@ export default function LoginPage() {
 
   return (
     <AuthLayout title="Welcome back" lead="Log in to plan your next hangout with your Squad.">
-      <p className="demo-hint">
-        <strong>Demo login:</strong> username <code>admin</code>, password <code>password</code>
-      </p>
       <form onSubmit={form.submit} noValidate>
         <div className="field">
           <label htmlFor="username">Username or email</label>
@@ -50,6 +47,8 @@ export default function LoginPage() {
           onChange={form.setPassword}
           error={form.errors.password}
         />
+
+        <p className="login__foot"><Link className="link" href="/forgot-password">Forgot your password?</Link></p>
 
         <div className="form__status" role="alert">
           {form.locked ? `Too many attempts. Try again in ${form.cooldown}s.` : form.formError}

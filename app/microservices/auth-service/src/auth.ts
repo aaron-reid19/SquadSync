@@ -61,9 +61,16 @@ authRouter.get("/csrf", (_req, res) => {
 authRouter.post("/login", requireCsrf, loginLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ error: "Invalid request" });
-  const { email, password } = parsed.data;
+  const { identifier, password } = parsed.data;
 
-  const user = (await query<User>("SELECT * FROM users WHERE email = $1", [email])).rows[0];
+  const user = (await query<User>(
+    `SELECT u.*
+       FROM users u
+       LEFT JOIN profiles p ON p.user_id = u.id
+      WHERE u.email = $1 OR p.username = $1
+      LIMIT 1`,
+    [identifier],
+  )).rows[0];
   const now = Date.now();
   const locked = !!user && user.locked_until > now;
   const ok = await argon2
@@ -125,13 +132,45 @@ authRouter.post("/google", requireCsrf, loginLimiter, async (req, res) => {
 authRouter.get("/me", async (req, res) => {
   const token = req.cookies?.sid as string | undefined;
   if (!token) return res.status(401).json({ error: "Not signed in" });
-  const row = (await query<{ email: string }>(
-    `SELECT u.email FROM sessions s JOIN users u ON u.id = s.user_id
+  const row = (await query<{
+    id: number;
+    email: string;
+    username: string | null;
+    first_name: string | null;
+    last_name: string | null;
+    dob: string | null;
+    phone: string | null;
+    city: string | null;
+    travel_km: number | null;
+    pronouns: string | null;
+    bio: string | null;
+    interests: string[] | null;
+    transport: string[] | null;
+  }>(
+    `SELECT u.id, u.email, p.username, p.first_name, p.last_name, p.dob, p.phone,
+            p.city, p.travel_km, p.pronouns, p.bio, p.interests, p.transport
+       FROM sessions s
+       JOIN users u ON u.id = s.user_id
+       LEFT JOIN profiles p ON p.user_id = u.id
      WHERE s.token_hash = $1 AND s.expires_at > $2`,
     [sha256(token), Date.now()],
   )).rows[0];
   if (!row) return res.status(401).json({ error: "Not signed in" });
-  res.json({ email: row.email });
+  res.json({
+    id: String(row.id),
+    email: row.email,
+    username: row.username ?? row.email.split("@")[0],
+    firstName: row.first_name ?? "SquadSync",
+    lastName: row.last_name ?? "member",
+    dob: row.dob ?? "",
+    phone: row.phone ?? "",
+    city: row.city ?? "",
+    travelKm: row.travel_km ?? 25,
+    pronouns: row.pronouns ?? "",
+    bio: row.bio ?? "",
+    interests: row.interests ?? [],
+    transport: row.transport ?? [],
+  });
 });
 
 authRouter.post("/logout", requireCsrf, async (req, res) => {

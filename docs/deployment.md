@@ -5,12 +5,14 @@ SquadSync has two deployment phases. Docker Compose is the current deployment pa
 ## Current Docker Compose deployment
 
 1. Build and publish the `nextjs-ui`, `api-gateway`, `auth-service`, `identity-service`, `squad-service`, `event-service`, `chat-service`, and `notification-worker` images from CI.
-2. Copy `deploy/.env.example` to `deploy/.env` on the home server and fill in the PostgreSQL and mail settings.
-3. Apply database migrations from a machine that can reach PostgreSQL:
+2. Copy `deploy/.env.example` to `deploy/.env` on the home server and fill in the PostgreSQL, identity, and mail settings.
+3. Apply the auth database migration from a machine that can reach PostgreSQL:
 
    ```bash
    npm --prefix app/microservices/auth-service run migrate
    ```
+
+   The auth service will remain unready until `DATABASE_URL` is set and this migration has completed.
 
 4. Start the application stack:
 
