@@ -4,7 +4,11 @@ set -Eeuo pipefail
 : "${DATABASE_URL:?DATABASE_URL is required}"
 : "${MIGRATION_SERVICE:?MIGRATION_SERVICE is required}"
 
-migration_dir="/migrations/${MIGRATION_SERVICE}"
+if [[ "${MIGRATION_SERVICE}" == "auth" ]]; then
+  migration_dir="/migrations/auth"
+else
+  migration_dir="/migrations/${MIGRATION_SERVICE}"
+fi
 if [[ ! -d "${migration_dir}" ]]; then
   echo "Unknown migration service: ${MIGRATION_SERVICE}" >&2
   exit 1

@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --import tsx --watch src/index.ts",
     "start": "node --import tsx src/index.ts",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "migrate": "node --import tsx src/migrate.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.0.2",

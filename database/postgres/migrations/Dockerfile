@@ -1,6 +1,6 @@
 FROM postgres:16.4
 
-COPY database/postgres/migrations/001_initial_schema.sql /migrations/auth/001_initial_schema.sql
+COPY database/postgres/migrations/auth /migrations/auth
 COPY database/postgres/migrations/squad /migrations/squad
 COPY database/postgres/migrations/event /migrations/event
 COPY database/postgres/migrations/chat /migrations/chat
