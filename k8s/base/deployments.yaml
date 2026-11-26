@@ -2,6 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nextjs-ui
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -57,6 +60,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-gateway
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -112,6 +118,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-service
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -174,6 +183,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: identity-service
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -231,6 +243,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: squad-service
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -293,6 +308,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: event-service
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -355,6 +373,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: chat-service
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
@@ -417,6 +438,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: notification-worker
+  annotations:
+    # After the migration Job hooks (wave 10): a failed migration stops the rollout.
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   replicas: 1
   selector:
