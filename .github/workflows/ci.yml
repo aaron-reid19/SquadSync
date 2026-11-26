@@ -59,7 +59,7 @@ jobs:
       - name: Build API gateway image
         run: docker build -f app/microservices/api-gateway/Dockerfile -t squadsync-api-gateway:ci .
 
-      - name: Build scaffold service images
+      - name: Build microservice images
         run: |
           docker build -f app/microservices/identity-service/Dockerfile -t squadsync-identity-service:ci .
           docker build -f app/microservices/squad-service/Dockerfile -t squadsync-squad-service:ci .
@@ -100,6 +100,8 @@ jobs:
             dockerfile: database/postgres/migrations/Dockerfile
     steps:
       - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
 
       - uses: docker/login-action@v3
         with:

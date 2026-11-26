@@ -8,8 +8,20 @@ services:
         required: false
     environment:
       PORT: 4001
+      DATABASE_URL: ${AUTH_DATABASE_URL:?Set AUTH_DATABASE_URL in deploy/.env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      IDENTITY_SERVICE_URL: http://identity-service:4100
+      SQUAD_SERVICE_URL: http://squad-service:4101
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set INTERNAL_SERVICE_TOKEN in deploy/.env}
+      IDENTITY_INTERNAL_TOKEN: ${IDENTITY_INTERNAL_TOKEN:?Set IDENTITY_INTERNAL_TOKEN in deploy/.env}
+      IDENTITY_COOKIE_NAME: ${IDENTITY_COOKIE_NAME:-squadsync-access}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-86400}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      identity-service:
+        condition: service_healthy
     healthcheck:
       test:
         - CMD
@@ -31,7 +43,9 @@ services:
       PORT: 4100
       IDENTITY_ISSUER: http://identity-service:4100
       IDENTITY_AUDIENCE: squadsync-api
-      IDENTITY_COOKIE_NAME: squadsync-access
+      IDENTITY_COOKIE_NAME: ${IDENTITY_COOKIE_NAME:-squadsync-access}
+      IDENTITY_INTERNAL_TOKEN: ${IDENTITY_INTERNAL_TOKEN:?Set IDENTITY_INTERNAL_TOKEN in deploy/.env}
+      ACCESS_TOKEN_TTL_SECONDS: ${ACCESS_TOKEN_TTL_SECONDS:-86400}
     healthcheck:
       test:
         - CMD
@@ -53,7 +67,11 @@ services:
       PORT: 4101
       IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
       IDENTITY_ISSUER: http://identity-service:4100
-      IDENTITY_COOKIE_NAME: squadsync-access
+      IDENTITY_COOKIE_NAME: ${IDENTITY_COOKIE_NAME:-squadsync-access}
+      DATABASE_URL: ${SQUAD_DATABASE_URL:?Set SQUAD_DATABASE_URL in deploy/.env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set INTERNAL_SERVICE_TOKEN in deploy/.env}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -80,11 +98,18 @@ services:
       PORT: 4102
       IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
       IDENTITY_ISSUER: http://identity-service:4100
-      IDENTITY_COOKIE_NAME: squadsync-access
+      IDENTITY_COOKIE_NAME: ${IDENTITY_COOKIE_NAME:-squadsync-access}
+      DATABASE_URL: ${EVENT_DATABASE_URL:?Set EVENT_DATABASE_URL in deploy/.env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      SQUAD_SERVICE_URL: http://squad-service:4101
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set INTERNAL_SERVICE_TOKEN in deploy/.env}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       identity-service:
+        condition: service_healthy
+      squad-service:
         condition: service_healthy
     healthcheck:
       test:
@@ -107,11 +132,18 @@ services:
       PORT: 4103
       IDENTITY_JWKS_URL: http://identity-service:4100/.well-known/jwks.json
       IDENTITY_ISSUER: http://identity-service:4100
-      IDENTITY_COOKIE_NAME: squadsync-access
+      IDENTITY_COOKIE_NAME: ${IDENTITY_COOKIE_NAME:-squadsync-access}
+      DATABASE_URL: ${CHAT_DATABASE_URL:?Set CHAT_DATABASE_URL in deploy/.env}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      DB_POOL_MAX: ${DB_POOL_MAX:-10}
+      EVENT_SERVICE_URL: http://event-service:4102
+      INTERNAL_SERVICE_TOKEN: ${INTERNAL_SERVICE_TOKEN:?Set INTERNAL_SERVICE_TOKEN in deploy/.env}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       identity-service:
+        condition: service_healthy
+      event-service:
         condition: service_healthy
     healthcheck:
       test:
