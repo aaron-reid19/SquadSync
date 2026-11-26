@@ -9,6 +9,14 @@ import {
   jwtVerify,
   SignJWT,
 } from "jose";
+import { assertRequiredConfig } from "./shared/config.js";
+
+assertRequiredConfig("identity-service", [
+  "IDENTITY_ISSUER",
+  "IDENTITY_PRIVATE_KEY_PEM",
+  "IDENTITY_PUBLIC_KEY_PEM",
+  "IDENTITY_INTERNAL_TOKEN",
+]);
 
 const app = Fastify({ logger: true });
 const port = Number(process.env.PORT) || 4100;

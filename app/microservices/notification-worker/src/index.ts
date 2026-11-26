@@ -1,5 +1,8 @@
 import "dotenv/config";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
+import { assertRequiredConfig } from "./shared/config.js";
+
+assertRequiredConfig("notification-worker", ["SERVICE_TOKEN"]);
 
 const app = Fastify({ logger: true });
 const port = Number(process.env.PORT) || 4104;

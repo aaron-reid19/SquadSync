@@ -28,6 +28,9 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check vendored shared helpers are in sync
+        run: scripts/sync-shared.sh --check
+
       - name: Run automated tests when available
         run: |
           for package in \

@@ -9,10 +9,16 @@ function getTransport() {
   return transport;
 }
 
-/** Sends an email. With no SMTP_URL (development) it prints the message instead. */
+/**
+ * Sends an email. With no SMTP_URL in development it prints the message instead.
+ * In production it never prints: the body can hold a password-reset token.
+ */
 export async function sendMail(to: string, subject: string, text: string, html: string) {
   const t = getTransport();
   if (!t) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("SMTP_URL is not configured; email was not sent");
+    }
     console.log(`\n[dev mail] To: ${to}\nSubject: ${subject}\n${text}\n`);
     return;
   }
