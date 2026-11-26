@@ -10,6 +10,7 @@ services:
       PORT: 4001
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -32,6 +33,7 @@ services:
       IDENTITY_ISSUER: http://identity-service:4100
       IDENTITY_AUDIENCE: squadsync-api
       IDENTITY_COOKIE_NAME: squadsync-access
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -59,6 +61,7 @@ services:
     depends_on:
       identity-service:
         condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -86,6 +89,7 @@ services:
     depends_on:
       identity-service:
         condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -113,6 +117,7 @@ services:
     depends_on:
       identity-service:
         condition: service_healthy
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -132,6 +137,7 @@ services:
         required: false
     environment:
       PORT: 4104
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -169,6 +175,7 @@ services:
         condition: service_healthy
     ports:
       - "4000:4000"
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD
@@ -191,6 +198,7 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
+    restart: unless-stopped
     healthcheck:
       test:
         - CMD

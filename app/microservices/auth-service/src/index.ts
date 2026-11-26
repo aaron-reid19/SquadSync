@@ -3,11 +3,13 @@ import express from "express";
 import helmet from "helmet";
 import cookieParser from "cookie-parser";
 import { authRouter } from "./auth";
-import { checkDatabase } from "./db";
+import { db } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
 import { assertRequiredConfig } from "./shared/config";
-import { createLogger, errorHandler, requestLogging } from "./shared/expressObservability";
+import { createLogger, errorHandler, requestIdOf, requestLogging } from "./shared/expressObservability";
+import { cacheSuccess, postgresCheck, runReadiness } from "./shared/readiness";
+import { verifyMailTransport } from "./mailer";
 
 assertRequiredConfig("auth-service", ["DATABASE_URL", "APP_URL"]);
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("GOOGLE_CLIENT_ID is not set: Google sign-in will fail.");
@@ -26,15 +28,16 @@ app.use(
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
 
+// Liveness: process is up. Readiness: PostgreSQL answers. SMTP is reported but not
+// critical, because a mail outage should not block login.
+const smtpCheck = { critical: false, run: cacheSuccess(verifyMailTransport, 60_000) };
 app.get("/health", (_req, res) => res.json({ ok: true, service: "auth" }));
 app.get("/ready", async (_req, res) => {
-  try {
-    await checkDatabase();
-    res.json({ ok: true, service: "auth", database: "ready" });
-  } catch (error) {
-    console.error("Auth readiness check failed:", error instanceof Error ? error.message : "unknown error");
-    res.status(503).json({ ok: false, service: "auth", database: "unavailable" });
+  const result = await runReadiness({ database: postgresCheck(db), smtp: smtpCheck });
+  if (Object.keys(result.failures).length) {
+    log.warn({ reqId: requestIdOf(res), failures: result.failures }, result.ok ? "degraded" : "not ready");
   }
+  res.status(result.statusCode).json({ ok: result.ok, service: "auth", checks: result.checks });
 });
 app.use("/api/auth", authRouter);
 app.use("/api/auth", passwordResetRouter);
