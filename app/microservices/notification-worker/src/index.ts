@@ -1,10 +1,12 @@
 import "dotenv/config";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
+import { fastifyOptions, registerObservability } from "./shared/fastifyObservability.js";
 import { assertRequiredConfig } from "./shared/config.js";
 
 assertRequiredConfig("notification-worker", ["SERVICE_TOKEN"]);
 
-const app = Fastify({ logger: true });
+const app = Fastify(fastifyOptions("notification-worker"));
+registerObservability(app);
 const port = Number(process.env.PORT) || 4104;
 
 async function requireServiceToken(request: FastifyRequest, reply: FastifyReply): Promise<void> {

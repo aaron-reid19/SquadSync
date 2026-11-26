@@ -1,12 +1,14 @@
 import "dotenv/config";
 import Fastify from "fastify";
+import { fastifyOptions, registerObservability } from "./shared/fastifyObservability.js";
 import cookie from "@fastify/cookie";
 import { assertRequiredConfig } from "./shared/config.js";
 import { requireIdentity } from "./auth.js";
 
 assertRequiredConfig("squad-service", ["DATABASE_URL", "IDENTITY_JWKS_URL", "IDENTITY_ISSUER"]);
 
-const app = Fastify({ logger: true });
+const app = Fastify(fastifyOptions("squad-service"));
+registerObservability(app);
 const port = Number(process.env.PORT) || 4101;
 
 await app.register(cookie);
