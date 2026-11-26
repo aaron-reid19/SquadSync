@@ -6,7 +6,9 @@ import { authRouter } from "./auth";
 import { checkDatabase } from "./db";
 import { passwordResetRouter } from "./passwordReset";
 import { signupRouter } from "./signup";
+import { assertRequiredConfig } from "./shared/config";
 
+assertRequiredConfig("auth-service", ["DATABASE_URL", "APP_URL"]);
 if (!process.env.GOOGLE_CLIENT_ID) console.warn("GOOGLE_CLIENT_ID is not set: Google sign-in will fail.");
 
 const app = express();

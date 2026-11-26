@@ -2,7 +2,10 @@ import "dotenv/config";
 import Fastify from "fastify";
 import cookie from "@fastify/cookie";
 import websocket from "@fastify/websocket";
+import { assertRequiredConfig } from "./shared/config.js";
 import { requireIdentity, verifyIdentity } from "./auth.js";
+
+assertRequiredConfig("chat-service", ["DATABASE_URL", "IDENTITY_JWKS_URL", "IDENTITY_ISSUER"]);
 
 const app = Fastify({ logger: true });
 const port = Number(process.env.PORT) || 4103;
