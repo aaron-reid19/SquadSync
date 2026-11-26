@@ -13,7 +13,7 @@
     "dev:events": "pnpm --filter squadsync-event-service dev",
     "dev:chat": "pnpm --filter squadsync-chat-service dev",
     "dev:notifications": "pnpm --filter squadsync-notification-worker dev",
-    "dev:all": "pnpm --parallel --filter './app/**' run dev",
+    "dev:all": "pnpm --parallel --filter \"./app/**\" run dev",
     "build": "pnpm --filter squadsync build",
     "typecheck": "pnpm --filter squadsync typecheck && pnpm --filter squadsync-api-gateway typecheck && pnpm --filter squadsync-auth-service typecheck && pnpm --filter squadsync-identity-service typecheck && pnpm --filter squadsync-squad-service typecheck && pnpm --filter squadsync-event-service typecheck && pnpm --filter squadsync-chat-service typecheck && pnpm --filter squadsync-notification-worker typecheck",
     "docker:build": "docker compose -f deploy/compose.yaml build"
