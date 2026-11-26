@@ -121,9 +121,9 @@ try {
   await transaction(squad, async (client) => {
     const squads = [
       [ids.squads.friday, "Friday Crew", "🎳", "FRYDAY", id("maya"), ["admin", "maya", "jordan", "priya", "sam"]],
-      [ids.squads.trail, "Trail Mix", "🥾", "TRAILS", id("leo"), ["admin", "leo", "nina"]],
+      [ids.squads.trail, "Trail Mix", "🥾", "TRALMX", id("leo"), ["admin", "leo", "nina"]],
       [ids.squads.meeple, "Meeple Meetup", "🎲", "MEEPLE", id("tariq"), ["tariq", "nina", "sam"]],
-      [ids.squads.mic, "Mic Night", "🎤", "SINGIT", id("zoe"), ["zoe", "jordan"]],
+      [ids.squads.mic, "Mic Night", "🎤", "MCKNTE", id("zoe"), ["zoe", "jordan"]],
     ] as const;
     for (const [squadId, name, emoji, code, ownerId, members] of squads) {
       await client.query("INSERT INTO squads (id, name, emoji, join_code, created_by_user_id) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING", [squadId, name, emoji, code, ownerId]);
