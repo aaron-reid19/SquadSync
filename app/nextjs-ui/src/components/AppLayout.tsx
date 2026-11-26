@@ -59,8 +59,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const isActive = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
   const handleLogout = () => {
-    logout();
-    router.replace("/login");
+    void logout().finally(() => router.replace("/login"));
   };
 
   return (

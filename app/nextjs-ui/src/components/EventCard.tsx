@@ -2,18 +2,27 @@ import Link from "next/link";
 import type { SquadEvent } from "../lib/data/types";
 import { useStore } from "../lib/data/store";
 import { emojiFor, fmtRelative, fmtSlot, toneFor } from "../lib/format";
-import { hasFinishedVoting, isVotingClosed, venueById, winner } from "../lib/results";
+import { hasFinishedVoting, isVotingClosed, winner } from "../lib/results";
 import { AvatarStack } from "./Avatar";
+import type { ReactNode } from "react";
 
-export default function EventCard({ event, action }: { event: SquadEvent; action?: React.ReactNode }) {
+export default function EventCard({ event, action }: { event: SquadEvent; action?: ReactNode }) {
   const { db, user, me } = useStore();
-  const squad = db.squads.find((s) => s.id === event.squadId);
+  const squad = db.squads.find((s) => s.id === event.squadId) ?? event.squad;
   const isFinal = event.status === "final" && event.final;
   const activity = isFinal ? event.suggestions.find((s) => s.id === event.final!.suggestionId) : winner(event).activity;
   const slot = isFinal ? event.slots.find((t) => t.id === event.final!.slotId) : undefined;
-  const venue = isFinal ? venueById(event.final!.venueId) : undefined;
+  const venue = isFinal ? event.final!.venue : undefined;
   const closed = !isFinal && isVotingClosed(event);
-  const needsVote = !isFinal && !closed && me &&squad?.memberIds.includes(me.id) && !hasFinishedVoting(event, me.id);
+  const isMember = Boolean(
+    me &&
+    db.squads.some(
+      (entry) =>
+        entry.id === event.squadId &&
+        entry.memberIds.includes(me.id)
+    )
+  );
+  const needsVote = !isFinal && !closed && me && isMember && !hasFinishedVoting(event, me.id);
 
   return (
     <article className="card event-card">
@@ -35,6 +44,7 @@ export default function EventCard({ event, action }: { event: SquadEvent; action
           <p className="event-card__line">
             <strong>{activity?.title}</strong> at {venue?.name}
             <br />
+            {venue?.address && <>{venue.address}<br /></>}
             {slot && fmtSlot(slot.start, slot.end)}
           </p>
         ) : (

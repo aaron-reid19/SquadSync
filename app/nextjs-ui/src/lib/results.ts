@@ -1,5 +1,4 @@
-import type { Area, SquadEvent, Suggestion, TimeSlot, Venue } from "./data/types";
-import { VENUES } from "./data/seed";
+import type { SquadEvent, Suggestion, TimeSlot } from "./data/types";
 
 /** Most likes wins; ties go to fewer passes, then to the earlier suggestion. */
 export function rankSuggestions(suggestions: Suggestion[]) {
@@ -23,26 +22,6 @@ export function winner(event: SquadEvent) {
   };
 }
 
-export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
-  const R = 6371;
-  const toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLng = toRad(b.lng - a.lng);
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
-
-export type NearbyVenue = Venue & { km: number };
-
-/** Venues for a category, closest to the meeting area first. */
-export function venuesNear(area: Area, category: string): NearbyVenue[] {
-  return VENUES.filter((v) => v.category === category)
-    .map((v) => ({ ...v, km: distanceKm(area, v) }))
-    .sort((a, b) => a.km - b.km);
-}
-
-export const venueById = (id?: string) => VENUES.find((v) => v.id === id);
-
 /** Voting is still open on paper, but its deadline has passed. */
 export function isVotingClosed(event: SquadEvent, now = Date.now()) {
   return event.status === "voting" && new Date(event.voteDeadline).getTime() <= now;
@@ -51,4 +30,43 @@ export function isVotingClosed(event: SquadEvent, now = Date.now()) {
 /** Has this user swiped on every suggestion yet? */
 export function hasFinishedVoting(event: SquadEvent, userId: string) {
   return event.suggestions.every((s) => s.likes.includes(userId) || s.passes.includes(userId));
+}
+
+/**
+ * Calculates the distance between two geographical coordinates
+ * using the Haversine formula.
+ *
+ * Returns distance in kilometres.
+ */
+export function distanceKm(
+  from: { lat: number; lng: number },
+  to: { lat: number; lng: number }
+): number {
+  const earthRadiusKm = 6371.0088;
+
+  const toRadians = (degrees: number) =>
+    (degrees * Math.PI) / 180;
+
+  const lat1 = toRadians(from.lat);
+  const lat2 = toRadians(to.lat);
+
+  const deltaLat = toRadians(to.lat - from.lat);
+  const deltaLng = toRadians(to.lng - from.lng);
+
+  const haversine =
+    Math.sin(deltaLat / 2) ** 2 +
+    Math.cos(lat1) *
+      Math.cos(lat2) *
+      Math.sin(deltaLng / 2) ** 2;
+
+  const clamped = Math.min(1, Math.max(0, haversine));
+
+  return (
+    2 *
+    earthRadiusKm *
+    Math.atan2(
+      Math.sqrt(clamped),
+      Math.sqrt(1 - clamped)
+    )
+  );
 }

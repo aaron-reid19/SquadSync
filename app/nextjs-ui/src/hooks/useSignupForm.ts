@@ -55,7 +55,7 @@ export function useSignupForm(onSuccess: () => void) {
     revalidate(values, key);
   }
 
-  // Debounced "is this username free?" check (MVP: against the mock store instead of the server).
+  // Debounced username availability check against the auth service.
   useEffect(() => {
     const u = values.username.trim().toLowerCase();
     if (!USERNAME_FORMAT.test(u)) return setUsernameStatus("idle");
@@ -65,16 +65,22 @@ export function useSignupForm(onSuccess: () => void) {
       return;
     }
     setUsernameStatus("checking");
+    let cancelled = false;
     const timer = window.setTimeout(() => {
-      if (isUsernameTaken(u)) {
-        taken.current.add(u);
-        setUsernameStatus("taken");
-        setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
-      } else {
-        setUsernameStatus("available");
-      }
+      void isUsernameTaken(u).then((takenAlready) => {
+        if (cancelled) return;
+        if (takenAlready) {
+          taken.current.add(u);
+          setUsernameStatus("taken");
+          setErrors((prev) => ({ ...prev, username: TAKEN_MESSAGE }));
+        } else {
+          setUsernameStatus("available");
+        }
+      }).catch(() => {
+        if (!cancelled) setUsernameStatus("idle");
+      });
     }, 300);
-    return () => window.clearTimeout(timer);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [values.username]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit(e: FormEvent) {
@@ -98,6 +104,7 @@ export function useSignupForm(onSuccess: () => void) {
       firstName: values.firstName.trim(),
       lastName: values.lastName.trim(),
       username: values.username,
+      dob: values.dob,
       phone: values.phone.trim() || undefined,
       city: values.city.trim(),
       travelKm: Number(values.travelKm),

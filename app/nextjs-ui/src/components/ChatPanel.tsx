@@ -16,18 +16,23 @@ export default function ChatPanel({ event }: { event: SquadEvent }) {
     endRef.current?.scrollIntoView({ block: "end", behavior: "smooth" });
   }, [messages.length]);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
-    sendMessage(event.id, text);
-    setText("");
+    try {
+      await sendMessage(event.id, text);
+      setText("");
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "Could not send message.");
+    }
   }
 
-  function shareStatus() {
+  async function shareStatus() {
     const top = rankSuggestions(event.suggestions)[0];
     const slot = rankSlots(event.slots)[0];
     const when = slot ? `${fmtDay(slot.start)} ${fmtTime(slot.start)}` : "TBD";
-    sendMessage(event.id, `📊 Vote check: ${top ? `${top.title} is leading with ${top.likes.length} 👍` : "no ideas yet"}, best time ${when}.`);
+    try { await sendMessage(event.id, `📊 Vote check: ${top ? `${top.title} is leading with ${top.likes.length} 👍` : "no ideas yet"}, best time ${when}.`); }
+    catch (error) { window.alert(error instanceof Error ? error.message : "Could not send message."); }
   }
 
   let lastDay = "";
@@ -68,7 +73,7 @@ export default function ChatPanel({ event }: { event: SquadEvent }) {
       <div className="chat__quick">
         {event.status === "voting" && <button type="button" className="chip" onClick={shareStatus}>📊 Share vote status</button>}
         {["I'm in! 🙌", "Running late", "Who's driving?"].map((q) => (
-          <button key={q} type="button" className="chip" onClick={() => sendMessage(event.id, q)}>{q}</button>
+          <button key={q} type="button" className="chip" onClick={() => void sendMessage(event.id, q).catch((error) => window.alert(error.message))}>{q}</button>
         ))}
       </div>
       <form className="chat__form" onSubmit={submit}>

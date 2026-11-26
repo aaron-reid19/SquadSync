@@ -115,7 +115,7 @@ function Detail({ label, children }: { label: string; children: ReactNode }) {
 
 function PersonalInfo() {
   const me = useMe();
-  const { updateProfile, resetDemo } = useStore();
+  const { updateProfile } = useStore();
   const [editing, setEditing] = useState(false);
   const [v, setV] = useState<ProfileDraft>(() => makeDraft(me));
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
@@ -139,7 +139,7 @@ function PersonalInfo() {
     setEditing(false);
   }
 
-  function save(e: FormEvent<HTMLFormElement>) {
+  async function save(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const found = {
       firstName: v.firstName.trim() ? undefined : "Required.",
@@ -155,20 +155,24 @@ function PersonalInfo() {
       return;
     }
 
-    updateProfile({
+    try {
+      await updateProfile({
       firstName: v.firstName.trim(),
       lastName: v.lastName.trim(),
       email: v.email.trim().toLowerCase(),
-      pronouns: v.pronouns || undefined,
-      bio: v.bio.trim() || undefined,
+      pronouns: v.pronouns,
+      bio: v.bio.trim(),
       city: v.city.trim(),
       travelKm: Number(v.travelKm),
       interests: v.interests,
       transport: v.transport,
       color: v.color,
-    });
-    setSaved(true);
-    setEditing(false);
+      });
+      setSaved(true);
+      setEditing(false);
+    } catch (error) {
+      setErrors((current) => ({ ...current, email: error instanceof Error ? error.message : "Could not save your profile." }));
+    }
   }
 
   if (!editing) {
@@ -320,17 +324,6 @@ function PersonalInfo() {
           </div>
         </div>
 
-        <div className="danger profile-demo-reset">
-          <div>
-            <strong>Demo data</strong>
-            <p className="muted small">Resetting restores the sample Squads, events and chats in this browser.</p>
-          </div>
-          <button type="button" className="btn btn--small btn--auto" onClick={() => {
-            if (confirm("Reset all demo data?")) resetDemo();
-          }}>
-            Reset demo data
-          </button>
-        </div>
       </form>
     </div>
   );
@@ -366,10 +359,15 @@ function Availability({ welcome }: { welcome: boolean }) {
     setEditing(false);
   }
 
-  function saveAvailability() {
-    setAvailability(value);
-    setSaved(true);
-    setEditing(false);
+  async function saveAvailability() {
+    try {
+      await setAvailability(value);
+      setSaved(true);
+      setEditing(false);
+    } catch (error) {
+      setSaved(false);
+      window.alert(error instanceof Error ? error.message : "Could not save availability.");
+    }
   }
 
   if (!editing) {

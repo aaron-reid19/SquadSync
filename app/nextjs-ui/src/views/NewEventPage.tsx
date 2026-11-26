@@ -87,7 +87,7 @@ export default function NewEventPage() {
       .join(", ")}.`);
   }
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     const now = Date.now();
     // Infinity when there are no valid slots, so the slots error shows instead of a deadline error.
@@ -109,7 +109,8 @@ export default function NewEventPage() {
     if (first) return document.getElementById(first)?.focus();
 
     const area = AREAS.find((a) => a.name === areaName) ?? AREAS[0];
-    const event = createEvent({
+    try {
+    const event = await createEvent({
       squadId, title, description, visibility, area: { ...area },
       voteDeadline: new Date(deadline).toISOString(),
       slots: slots.map((s) => {
@@ -119,6 +120,9 @@ export default function NewEventPage() {
       ideas: ideas.map((c) => ({ title: IDEA_TITLES[c] ?? c, category: c, price: 2 as const })),
     });
     router.push(`/events/${event.id}/chat?tab=vote`);
+    } catch (error) {
+      setErrors((current) => ({ ...current, squadId: error instanceof Error ? error.message : "Could not create event." }));
+    }
   }
 
   return (

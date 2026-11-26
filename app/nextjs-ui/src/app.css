@@ -18,7 +18,6 @@ code { font-size: .9em; background: #fff3b0; padding: 1px 6px; border-radius: 6p
 .stack { display: flex; flex-direction: column; gap: 18px; }
 .empty { padding: 18px; border: 2px dashed rgba(27, 36, 48, .35); border-radius: 14px; color: var(--muted); margin: 0; }
 .loading { min-height: 100dvh; display: grid; place-items: center; font-family: var(--font-display); }
-.demo-hint { margin: -8px 0 18px; padding: 10px 12px; background: #fff7c7; border: 2px dashed var(--ink); border-radius: 12px; font-size: .92rem; line-height: 1.5; }
 
 /* Buttons (extends .btn from globals) */
 .btn--auto { width: auto; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }

@@ -12,7 +12,7 @@ interface LoginErrors {
 
 /**
  * All login behaviour lives here so the page component stays purely visual.
- * MVP: checks the hard-coded admin (and demo sign-ups) in the mock store instead of the server.
+ * Checks credentials against the PostgreSQL-backed authentication service.
  */
 export function useLoginForm(onSuccess: () => void) {
   const { login } = useStore();

@@ -1,4 +1,4 @@
-// Shapes shared by the demo store and the future service API clients.
+// Public application data returned by the PostgreSQL-backed API services.
 
 /** Availability grid key: `${day}-${block}` where day 0 = Monday and block indexes BLOCKS. */
 export type AvailabilityKey = `${number}-${number}`;
@@ -7,6 +7,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  dob?: string;
   firstName: string;
   lastName: string;
   pronouns?: string;
@@ -57,6 +58,7 @@ export interface FinalPlan {
   suggestionId: string;
   slotId: string;
   venueId: string;
+  venue: { id: string; name: string; address: string; lat?: number; lng?: number };
   finalizedAt: string;
 }
 
@@ -65,6 +67,8 @@ export type EventStatus = "voting" | "final";
 export interface SquadEvent {
   id: string;
   squadId: string;
+  /** Public, non-sensitive squad label used when viewing a public event outside your own squads. */
+  squad?: { id: string; name: string; emoji: string; createdBy?: string };
   title: string;
   description: string;
   organizerId: string;
@@ -88,15 +92,13 @@ export interface Message {
   at: string; // ISO
 }
 
+/** A place explicitly confirmed by an event organizer, not a catalogue fixture. */
 export interface Venue {
   id: string;
   name: string;
-  category: string;
   address: string;
-  lat: number;
-  lng: number;
-  rating: number;
-  price: 1 | 2 | 3;
+  lat?: number;
+  lng?: number;
 }
 
 export interface DB {

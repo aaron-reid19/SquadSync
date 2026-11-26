@@ -1,35 +1,52 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useState } from "react";
 import type { SquadEvent } from "../lib/data/types";
 import { useMe, useStore } from "../lib/data/store";
 import { fitsAvailability } from "../lib/availability";
-import { emojiFor, fmtSlot, fullName, priceLabel } from "../lib/format";
+import { emojiFor, fmtSlot, fullName } from "../lib/format";
 import { INTERESTS } from "../lib/profileOptions";
-import { rankSlots, rankSuggestions, venuesNear } from "../lib/results";
+import { rankSlots, rankSuggestions } from "../lib/results";
 import { AvatarStack } from "./Avatar";
 import FinalPlan from "./FinalPlan";
 import Modal from "./Modal";
 import SwipeDeck from "./SwipeDeck";
-import VenueMap from "./VenueMap";
 
 type Step = "swipe" | "times" | "results";
 
 export default function VotingPanel({ event }: { event: SquadEvent }) {
   const me = useMe();
   const { user, reopen } = useStore();
+  const [actionError, setActionError] = useState("");
   const [step, setStep] = useState<Step>(() => {
     const unswiped = event.suggestions.some((s) => !s.likes.includes(me.id) && !s.passes.includes(me.id));
     return unswiped ? "swipe" : event.slots.some((t) => t.availableIds.includes(me.id)) ? "results" : "times";
   });
+  const deadlinePassed = Number.isFinite(Date.parse(event.voteDeadline)) && Date.parse(event.voteDeadline) <= Date.now();
 
   if (event.status === "final" && event.final) {
     return (
       <div className="stack">
         <FinalPlan event={event} />
+        {actionError && <p className="field__error" role="alert">{actionError}</p>}
         {event.organizerId === me.id && (
-          <button type="button" className="btn btn--small btn--auto btn--ghost" onClick={() => reopen(event.id)}>
+          <button type="button" className="btn btn--small btn--auto btn--ghost" onClick={() => { void reopen(event.id).catch((e) => setActionError(e instanceof Error ? e.message : "Could not reopen voting.")); }}>
             Reopen voting
           </button>
         )}
+      </div>
+    );
+  }
+
+  if (deadlinePassed) {
+    return (
+      <div className="stack">
+        <p className="banner">Voting has closed. The organizer can finalize a plan or reopen voting for up to 24 hours, ending before the next proposed time.</p>
+        <ResultsStep event={event} />
+        {event.organizerId === me.id && (
+          <button type="button" className="btn btn--small btn--auto btn--ghost" onClick={() => { void reopen(event.id).catch((e) => setActionError(e instanceof Error ? e.message : "Could not reopen voting.")); }}>
+            Reopen voting
+          </button>
+        )}
+        {actionError && <p className="field__error" role="alert">{actionError}</p>}
       </div>
     );
   }
@@ -68,19 +85,23 @@ function SwipeStep({ event, onDone }: { event: SquadEvent; onDone: () => void })
   const [error, setError] = useState("");
   const pending = event.suggestions.filter((s) => !s.likes.includes(me.id) && !s.passes.includes(me.id));
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
     if (idea.title.trim().length < 3) return setError("Give it a short name (3+ characters).");
-    addSuggestion(event.id, { title: idea.title.trim(), category: idea.category, price: idea.price, note: idea.note.trim() || undefined });
-    setIdea({ title: "", category: INTERESTS[0], price: 2, note: "" });
     setError("");
-    setOpen(false);
+    try {
+      await addSuggestion(event.id, { title: idea.title.trim(), category: idea.category, price: idea.price, note: idea.note.trim() || undefined });
+      setIdea({ title: "", category: INTERESTS[0], price: 2, note: "" });
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not add this activity.");
+    }
   }
 
   return (
     <div className="stack">
       {pending.length > 0 ? (
-        <SwipeDeck cards={pending} total={event.suggestions.length} onVote={(id, like) => vote(event.id, id, like)} />
+        <SwipeDeck cards={pending} total={event.suggestions.length} onVote={(id, like) => { void vote(event.id, id, like).catch((e) => setError(e instanceof Error ? e.message : "Could not save your vote.")); }} />
       ) : (
         <div className="card done-card">
           <p className="done-card__emoji" aria-hidden="true">🎉</p>
@@ -136,24 +157,32 @@ function TimesStep({ event, onDone }: { event: SquadEvent; onDone: () => void })
   const [note, setNote] = useState("");
   const max = Math.max(1, ...event.slots.map((t) => t.availableIds.length));
 
-  function fillFromProfile() {
+  async function fillFromProfile() {
     if (!me.availability.length) return setNote("You haven't set your weekly availability yet. Add it on your Profile.");
     let n = 0;
-    for (const t of event.slots) {
-      const free = fitsAvailability(t.start, me.availability);
-      if (free) n++;
-      toggleSlot(event.id, t.id, free);
+    try {
+      await Promise.all(event.slots.map((t) => {
+        const free = fitsAvailability(t.start, me.availability);
+        if (free) n++;
+        return toggleSlot(event.id, t.id, free);
+      }));
+      setNote(`Filled from your profile: free for ${n} of ${event.slots.length} options. Adjust anything below.`);
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : "Could not save your availability.");
     }
-    setNote(`Filled from your profile: free for ${n} of ${event.slots.length} options. Adjust anything below.`);
   }
 
-  function add(e: FormEvent) {
+  async function add(e: FormEvent) {
     e.preventDefault();
     const start = new Date(newStart);
-    if (!newStart || start.getTime() < Date.now()) return setNote("Pick a future date and time.");
-    addSlot(event.id, start.toISOString(), new Date(start.getTime() + 3 * 3_600_000).toISOString());
-    setNewStart("");
-    setNote("Added. You're marked free for it.");
+    if (!newStart || !Number.isFinite(start.getTime()) || start.getTime() < Date.now()) return setNote("Pick a future date and time.");
+    try {
+      await addSlot(event.id, start.toISOString(), new Date(start.getTime() + 3 * 3_600_000).toISOString());
+      setNewStart("");
+      setNote("Added. You're marked free for it.");
+    } catch (e) {
+      setNote(e instanceof Error ? e.message : "Could not add this time.");
+    }
   }
 
   return (
@@ -168,7 +197,7 @@ function TimesStep({ event, onDone }: { event: SquadEvent; onDone: () => void })
           const free = t.availableIds.includes(me.id);
           return (
             <li key={t.id}>
-              <button type="button" className="slot" aria-pressed={free} onClick={() => toggleSlot(event.id, t.id)}>
+              <button type="button" className="slot" aria-pressed={free} onClick={() => { void toggleSlot(event.id, t.id).catch((e) => setNote(e instanceof Error ? e.message : "Could not update availability.")); }}>
                 <span className="slot__check" aria-hidden="true">{free ? "✓" : ""}</span>
                 <span className="slot__main">
                   <strong>{fmtSlot(t.start, t.end)}</strong>
@@ -201,15 +230,37 @@ function ResultsStep({ event }: { event: SquadEvent }) {
   const slots = rankSlots(event.slots);
   const [activityId, setActivityId] = useState(ranked[0]?.id);
   const [slotId, setSlotId] = useState(slots[0]?.id);
+  const [venueName, setVenueName] = useState(event.final?.venue.name ?? "");
+  const [venueAddress, setVenueAddress] = useState(event.final?.venue.address ?? "");
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
   const activity = event.suggestions.find((s) => s.id === activityId) ?? ranked[0];
-  const venues = useMemo(() => (activity ? venuesNear(event.area, activity.category) : []), [activity, event.area]);
-  const [venueId, setVenueId] = useState<string | undefined>();
-  const chosenVenue = venues.find((v) => v.id === venueId) ?? venues[0];
   const isOrganizer = event.organizerId === me.id;
   const maxLikes = Math.max(1, ...event.suggestions.map((s) => s.likes.length + s.passes.length));
   const [nudged, setNudged] = useState(false);
+  const canVote = event.status === "voting" && Date.parse(event.voteDeadline) > Date.now();
 
   if (!activity) return <p className="empty">No ideas yet. Suggest one on the Activities step.</p>;
+
+  async function lockPlan() {
+    if (!slotId) return setError("Choose a time option.");
+    if (venueName.trim().length < 2 || venueAddress.trim().length < 5) {
+      return setError("Enter the real meeting place and its street address.");
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await finalize(event.id, {
+        suggestionId: activity.id,
+        slotId,
+        venue: { id: `manual-${event.id}`, name: venueName.trim(), address: venueAddress.trim() },
+      });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save the final plan.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="stack">
@@ -220,8 +271,8 @@ function ResultsStep({ event }: { event: SquadEvent }) {
             const mine = s.likes.includes(me.id) ? true : s.passes.includes(me.id) ? false : null;
             return (
               <li key={s.id} className={`rank${s.id === activity.id ? " rank--on" : ""}`}>
-                <button type="button" className="rank__pick" onClick={() => { setActivityId(s.id); setVenueId(undefined); }}
-                  aria-pressed={s.id === activity.id} aria-label={`Show venues for ${s.title}`}>
+                <button type="button" className="rank__pick" onClick={() => setActivityId(s.id)}
+                  aria-pressed={s.id === activity.id} aria-label={`Select ${s.title}`}>
                   <span className="rank__pos">{i === 0 ? "🏆" : i + 1}</span>
                   <span className="rank__main">
                     <strong>{emojiFor(s.category)} {s.title}</strong>
@@ -233,8 +284,10 @@ function ResultsStep({ event }: { event: SquadEvent }) {
                   </span>
                 </button>
                 <span className="rank__mine" role="group" aria-label={`Your vote on ${s.title}`}>
-                  <button type="button" className="mini" aria-pressed={mine === true} onClick={() => vote(event.id, s.id, mine === true ? null : true)} aria-label="Like">👍</button>
-                  <button type="button" className="mini" aria-pressed={mine === false} onClick={() => vote(event.id, s.id, mine === false ? null : false)} aria-label="Pass">👎</button>
+                  <button type="button" className="mini" aria-pressed={mine === true} disabled={!canVote}
+                    onClick={() => void vote(event.id, s.id, mine === true ? null : true).catch((e) => setError(e instanceof Error ? e.message : "Could not save your vote."))} aria-label="Like">👍</button>
+                  <button type="button" className="mini" aria-pressed={mine === false} disabled={!canVote}
+                    onClick={() => void vote(event.id, s.id, mine === false ? null : false).catch((e) => setError(e instanceof Error ? e.message : "Could not save your vote."))} aria-label="Pass">👎</button>
                 </span>
               </li>
             );
@@ -242,28 +295,22 @@ function ResultsStep({ event }: { event: SquadEvent }) {
         </ol>
       </section>
 
-      <section aria-labelledby="map-h">
-        <h3 id="map-h" className="h3">{emojiFor(activity.category)} {activity.title}: spots near {event.area.name}</h3>
-        {venues.length === 0 ? (
-          <p className="empty">No mock venues for {activity.category} yet.</p>
-        ) : (
-          <div className="split">
-            <div className="venue-list">
-              {venues.map((v) => (
-                <button key={v.id} type="button" className={`card venue venue__main${chosenVenue?.id === v.id ? " venue--on" : ""}`}
-                  aria-pressed={chosenVenue?.id === v.id} onClick={() => setVenueId(v.id)}>
-                  <span className="venue__emoji" aria-hidden="true">{emojiFor(v.category)}</span>
-                  <span>
-                    <strong className="venue__name">{v.name}</strong>
-                    <span className="muted small">★ {v.rating} · {priceLabel(v.price)} · {v.km.toFixed(1)} km · {v.address}</span>
-                  </span>
-                </button>
-              ))}
+      <section aria-labelledby="place-h">
+        <h3 id="place-h" className="h3">Where should you meet?</h3>
+        <p className="muted small">Enter the real place selected by your group. SquadSync saves the details you provide; it does not invent venue listings or ratings.</p>
+        {isOrganizer ? (
+          <div className="stack">
+            <div className="field">
+              <label htmlFor="venue-name">Place name</label>
+              <input id="venue-name" value={venueName} maxLength={120} placeholder="Restaurant, park, venue…" onChange={(e) => setVenueName(e.target.value)} />
             </div>
-            <div className="split__map">
-              <VenueMap area={event.area} venues={venues} selectedId={chosenVenue?.id} onSelect={setVenueId} height={320} />
+            <div className="field">
+              <label htmlFor="venue-address">Street address</label>
+              <input id="venue-address" value={venueAddress} maxLength={240} placeholder="Street address, city" onChange={(e) => setVenueAddress(e.target.value)} />
             </div>
           </div>
+        ) : (
+          <p className="banner">Waiting for {user(event.organizerId)?.firstName} to add the meeting place.</p>
         )}
       </section>
 
@@ -271,26 +318,24 @@ function ResultsStep({ event }: { event: SquadEvent }) {
         <h3 id="time-h" className="h3">Time</h3>
         <div className="field">
           <label htmlFor="final-slot" className="sr-only">Time</label>
-          <select id="final-slot" value={slotId} onChange={(e) => setSlotId(e.target.value)} disabled={!isOrganizer}>
+          <select id="final-slot" value={slotId ?? ""} onChange={(e) => setSlotId(e.target.value)} disabled={!isOrganizer || slots.length === 0}>
             {slots.map((t, i) => (
-              <option key={t.id} value={t.id}>
-                {i === 0 ? "🏆 " : ""}{fmtSlot(t.start, t.end)} ({t.availableIds.length} free)
-              </option>
+              <option key={t.id} value={t.id}>{i === 0 ? "🏆 " : ""}{fmtSlot(t.start, t.end)} ({t.availableIds.length} free)</option>
             ))}
           </select>
         </div>
       </section>
 
+      {error && <p className="field__error" role="alert">{error}</p>}
       {isOrganizer ? (
-        <button type="button" className="btn btn--primary" disabled={!chosenVenue || !slotId}
-          onClick={() => chosenVenue && slotId && finalize(event.id, { suggestionId: activity.id, slotId, venueId: chosenVenue.id })}>
-          🔒 Lock it in: {activity.title} at {chosenVenue?.name ?? "…"}
+        <button type="button" className="btn btn--primary" disabled={busy || !slotId || !venueName.trim() || !venueAddress.trim()} onClick={() => void lockPlan()}>
+          {busy ? "Saving…" : `🔒 Lock it in: ${activity.title}`}
         </button>
       ) : (
         <div className="banner">
           Waiting for {user(event.organizerId)?.firstName} to lock in the plan.{" "}
           <button type="button" className="link link--btn" disabled={nudged}
-            onClick={() => { sendMessage(event.id, `@${user(event.organizerId)?.username} the vote is in, can we lock it? 🙏`); setNudged(true); }}>
+            onClick={() => { void sendMessage(event.id, `@${user(event.organizerId)?.username} the vote is in, can we lock it? 🙏`).then(() => setNudged(true)).catch((e) => setError(e.message)); }}>
             {nudged ? "Nudged ✓" : "Nudge them"}
           </button>
         </div>

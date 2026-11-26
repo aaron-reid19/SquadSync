@@ -63,25 +63,33 @@ export default function MainPage() {
     setError("");
   }
 
-  function submitCreate(event: FormEvent<HTMLFormElement>) {
+  async function submitCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const squadName = name.trim();
     if (squadName.length < 2) {
       setError("Give your Squad a name with at least 2 characters.");
       return;
     }
-    createSquad(squadName, emoji);
-    closeModal();
+    try {
+      await createSquad(squadName, emoji);
+      closeModal();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create the Squad.");
+    }
   }
 
-  function submitJoin(event: FormEvent<HTMLFormElement>) {
+  async function submitJoin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const squad = joinSquad(code.trim().toUpperCase());
-    if (!squad) {
-      setError("We couldn't find a Squad with that code. Check it and try again.");
-      return;
+    try {
+      const squad = await joinSquad(code.trim().toUpperCase());
+      if (!squad) {
+        setError("We couldn't find a Squad with that code. Check it and try again.");
+        return;
+      }
+      closeModal();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not join that Squad.");
     }
-    closeModal();
   }
 
   async function copyInviteCode(inviteCode: string) {
@@ -278,7 +286,7 @@ export default function MainPage() {
                     type="button"
                     className="btn btn--small btn--auto btn--ghost squad-card__leave"
                     onClick={() => {
-                      if (confirm(`Leave ${squad.name}? You'll need the invite code to rejoin.`)) leaveSquad(squad.id);
+                      if (confirm(`Leave ${squad.name}? You'll need the invite code to rejoin.`)) void leaveSquad(squad.id).catch((e) => setCopyMessage(e instanceof Error ? e.message : "Could not leave Squad."));
                     }}
                   >
                     Leave Squad

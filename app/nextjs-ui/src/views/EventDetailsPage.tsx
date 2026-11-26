@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Avatar } from "../components/Avatar";
 import FinalPlan from "../components/FinalPlan";
 import { useMe, useStore } from "../lib/data/store";
@@ -13,8 +13,10 @@ export default function EventDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { db, user, rsvp } = useStore();
   const me = useMe();
+  const [rsvpError, setRsvpError] = useState("");
   const event = db.events.find((e) => e.id === id);
-  const squad = db.squads.find((s) => s.id === event?.squadId);
+  const squadRecord = db.squads.find((s) => s.id === event?.squadId);
+  const squad = squadRecord ?? (event?.squad ? { ...event.squad, memberIds: [] as string[] } : undefined);
   const eventTitle = event?.title;
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function EventDetailsPage() {
     );
   }
 
-  const isMember = squad.memberIds.includes(me.id);
+  const isMember = Boolean(squadRecord?.memberIds.includes(me.id));
   const going = event.attendeeIds.includes(me.id);
   const declined = event.declinedIds.includes(me.id);
   const canParticipate = isMember || going;
@@ -49,7 +51,7 @@ export default function EventDetailsPage() {
   const leading = rankSuggestions(event.suggestions)[0];
   const bestSlot = rankSlots(event.slots)[0];
   const voters = new Set(event.suggestions.flatMap((s) => [...s.likes, ...s.passes]));
-  const participants = new Set([...squad.memberIds, ...event.attendeeIds]);
+  const participants = new Set([...(squadRecord?.memberIds ?? []), ...event.attendeeIds]);
   const headerCategory = isFinal ? event.suggestions.find((s) => s.id === event.final!.suggestionId)?.category : leading?.category;
 
   return (
@@ -73,13 +75,14 @@ export default function EventDetailsPage() {
 
           <div className="rsvp" role="group" aria-label="Sign up">
             <span className="rsvp__q">Are you in?</span>
-            <button type="button" className={`btn btn--small btn--auto ${going ? "btn--green" : ""}`} aria-pressed={going} onClick={() => rsvp(event.id, true)}>
+            <button type="button" className={`btn btn--small btn--auto ${going ? "btn--green" : ""}`} aria-pressed={going} onClick={() => { void rsvp(event.id, true).catch((e) => setRsvpError(e instanceof Error ? e.message : "Could not update RSVP.")); }}>
               {going ? "✓ I'm in" : "I'm in"}
             </button>
-            <button type="button" className={`btn btn--small btn--auto ${declined ? "btn--red" : ""}`} aria-pressed={declined} onClick={() => rsvp(event.id, false)}>
+            <button type="button" className={`btn btn--small btn--auto ${declined ? "btn--red" : ""}`} aria-pressed={declined} onClick={() => { void rsvp(event.id, false).catch((e) => setRsvpError(e instanceof Error ? e.message : "Could not update RSVP.")); }}>
               Can&apos;t make it
             </button>
           </div>
+          {rsvpError && <p className="field__error" role="alert">{rsvpError}</p>}
         </div>
       </section>
 
